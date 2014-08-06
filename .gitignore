@@ -1,2 +1,5 @@
 /vendor
 /composer.phar
+
+# declassify later
+/share

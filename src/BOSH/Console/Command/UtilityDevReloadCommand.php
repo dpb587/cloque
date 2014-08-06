@@ -173,7 +173,7 @@ class UtilityDevReloadCommand extends Command
                         if ($currStatus != $volumeStatus['State']) {
                             $currStatus = $volumeStatus['State'];
 
-                            $output->write($volumeStatus['State'] . '...');
+                            $output->write($currStatus . '...');
                         } else {
                             $output->write('.');
                         }
@@ -212,7 +212,7 @@ class UtilityDevReloadCommand extends Command
                         if ($currStatus != $volumeStatus['State']) {
                             $currStatus = $volumeStatus['State'];
 
-                            $output->write($volumeStatus['State'] . '...');
+                            $output->write($currStatus . '...');
                         } else {
                             $output->write('.');
                         }
@@ -266,7 +266,7 @@ class UtilityDevReloadCommand extends Command
                         if ($currStatus != $volumeStatus['State']) {
                             $currStatus = $volumeStatus['State'];
 
-                            $output->write($volumeStatus['State'] . '...');
+                            $output->write($currStatus . '...');
                         } else {
                             $output->write('.');
                         }

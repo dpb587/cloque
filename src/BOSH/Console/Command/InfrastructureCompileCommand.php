@@ -70,7 +70,6 @@ class InfrastructureCompileCommand extends Command
 
         $engine = new TemplateEngine(
             $input->getOption('basedir'),
-            $input->getOption('basename'),
             $input->getArgument('locality'),
             $input->getArgument('deployment')
         );

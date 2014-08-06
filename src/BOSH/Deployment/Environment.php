@@ -7,16 +7,14 @@ use Symfony\Component\Yaml\Yaml;
 class Environment implements \ArrayAccess
 {
     protected $basedir;
-    protected $basename;
-    protected $localityName;
+    protected $directorName;
     protected $deploymentName;
     protected $cache = [];
 
-    public function __construct($basedir, $basename, $localityName, $deploymentName)
+    public function __construct($basedir, $directorName, $deploymentName)
     {
         $this->basedir = $basedir;
-        $this->basename = $basename;
-        $this->localityName = $localityName;
+        $this->directorName = $directorName;
         $this->deploymentName = $deploymentName;
     }
 
@@ -29,15 +27,15 @@ class Environment implements \ArrayAccess
     {
         if (!isset($this->cache[$offset])) {
             if ('bosh' == $offset) {
-                $this->cache[$offset] = Yaml::parse(file_get_contents($this->basedir . '/' . $this->localityName . '/.bosh_config'));
+                $this->cache[$offset] = Yaml::parse(file_get_contents($this->basedir . '/' . $this->directorName . '/.bosh_config'));
             } elseif ('global.private.aws' == $offset) {
                 $this->cache[$offset] = Yaml::parse(file_get_contents($this->basedir . '/global/private/aws.yml'));
             } elseif ('network' == $offset) {
-                $this->cache[$offset] = Yaml::parse(file_get_contents($this->basedir . '/' . $this->localityName . '/../network.yml'));
+                $this->cache[$offset] = Yaml::parse(file_get_contents($this->basedir . '/' . $this->directorName . '/../network.yml'));
             } elseif ('network.local' == $offset) {
-                $this->cache[$offset] = $this['network']['regions'][($this->basename ? ($this->basename . '-') : '') . $this->localityName];
+                $this->cache[$offset] = $this['network']['regions'][$this->directorName];
             } elseif (preg_match('#^(?<locality>[^/]+)/infrastructure/(?<deployment>[^/]+)(/(?<component>[^/]+))?$#', $offset, $match)) {
-                $this->cache[$offset] = json_decode(file_get_contents($this->basedir . '/compiled/' . (('self' == $match['locality']) ? $this->localityName : $match['locality']) . '/' . $match['deployment'] . '/infrastructure' . (!empty($match['component']) ? ('-' . $match['component']) : '') . '--state.json'), true);
+                $this->cache[$offset] = json_decode(file_get_contents($this->basedir . '/compiled/' . (('self' == $match['locality']) ? $this->directorName : $match['locality']) . '/' . $match['deployment'] . '/infrastructure' . (!empty($match['component']) ? ('-' . $match['component']) : '') . '--state.json'), true);
             } else {
                 throw new \RuntimeException('Unable to find "' . $offset . '"');
             }

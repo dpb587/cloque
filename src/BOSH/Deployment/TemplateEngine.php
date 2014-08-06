@@ -5,23 +5,23 @@ namespace BOSH\Deployment;
 class TemplateEngine
 {
     protected $basedir;
-    protected $basename;
-    protected $localityName;
+    protected $directorName;
     protected $deploymentName;
     protected $params;
     protected $twig;
 
-    public function __construct($basedir, $basename, $localityName, $deploymentName, array $params = [])
+    public function __construct($basedir, $directorName, $deploymentName, array $params = [])
     {
         $this->basedir = $basedir;
-        $this->basename = $basename;
-        $this->localityName = $localityName;
+        $this->directorName = $directorName;
         $this->deploymentName = $deploymentName;
 
+        $env = new Environment($this->basedir, $this->directorName, $this->deploymentName);
         $this->params = [
-            'locality' => ($this->basename ? ($this->basename . '-') : '') . $this->localityName,
+            'network_name' => $env['network']['root']['name'],
+            'director_name' => $this->directorName,
             'deployment' => $this->deploymentName,
-            'env' => new Environment($this->basedir, $this->basename, $this->localityName, $this->deploymentName),
+            'env' => $env,
         ];
 
         $this->twig = new \Twig_Environment(

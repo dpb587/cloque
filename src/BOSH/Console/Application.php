@@ -40,6 +40,11 @@ class Application extends BaseApplication
         $commands[] = new Command\UtilityComputePricingCommand();
         $commands[] = new Command\UtilityDevReloadCommand();
         $commands[] = new Command\UtilityTagInstanceVolumesCommand();
+        $commands[] = new Command\UtilityInitializeNetworkCommand();
+        $commands[] = new Command\OpenvpnRebuildPackagesCommand();
+        $commands[] = new Command\OpenvpnReloadServersCommand();
+        $commands[] = new Command\OpenvpnSignCertificateCommand();
+        $commands[] = new Command\OpenvpnGenerateProfileCommand();
 
         return $commands;
     }

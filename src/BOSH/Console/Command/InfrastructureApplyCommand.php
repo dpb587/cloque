@@ -65,14 +65,14 @@ class InfrastructureApplyCommand extends Command
 
         $stackName = sprintf(
             '%s--%s%s',
-            ($input->getOption('basename') ? ($input->getOption('basename') . '-') : '') . $input->getArgument('locality'),
+            $network['root']['name'] . '-' . $input->getArgument('locality'),
             $input->getArgument('deployment'),
             $input->getOption('component') ? ('--' . $input->getOption('component')) : ''
         );
 
         // hack
         $stackName = preg_replace('#^prod-abraxas-global(\-\-.*)$#', 'global$1', $stackName);
-        $region = $network['regions'][($input->getOption('basename') ? ($input->getOption('basename') . '-') : '') . $input->getArgument('locality')]['region'];
+        $region = $network['regions'][$input->getArgument('locality')]['region'];
 
         $awsCloudFormation = \Aws\CloudFormation\CloudFormationClient::factory([
             'region' => $region,
@@ -112,7 +112,7 @@ class InfrastructureApplyCommand extends Command
             $apiArgs['Tags'] = [
                 [
                     'Key' => 'deployment',
-                    'Value' => ($input->getOption('basename') ? ($input->getOption('basename') . '-') : '') . $input->getArgument('locality') . '.' . $network['root']['host'],
+                    'Value' => $input->getArgument('locality') . '.' . $network['root']['name'] . '.' . $network['root']['host'],
                 ],
                 [
                     'Key' => 'director',
