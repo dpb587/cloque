@@ -19,6 +19,23 @@
     cloque infrastructure:apply aws-usw2 core
     cloque infrastructure:reload-state aws-usw2 core
 
+    cloque infrastructure:compile aws-usw2 bosh
+    cloque infrastructure:apply aws-usw2 bosh
+    cloque infrastructure:reload-state aws-usw2 bosh
+
+    cloque bosh:compile aws-usw2 bosh
+    cloque bosh:apply aws-usw2 bosh
+    cloque bosh:reload-state aws-usw2 bosh
+
+    cloque inception:start aws-usw2 \
+      --subnet `cat compiled/aws-usw2/core/infrastructure--state.json | jq -r '.SubnetZ0PublicId'` \
+      --security-group `cat compiled/aws-usw2/core/infrastructure--state.json | jq -r '.TrustedPeerSecurityGroupId'` \
+      --security-group `cat compiled/aws-usw2/bosh/infrastructure--state.json | jq -r '.DirectorSecurityGroupId'`
+
+    cloque inception:provision-bosh aws-usw2 ami-6b2b535b
+
+    ( cd aws-usw2 && bosh target http://192.168.1.2:25555 )
+
 
 # OpenVPN Client
 

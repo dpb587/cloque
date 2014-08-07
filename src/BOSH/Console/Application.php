@@ -39,12 +39,14 @@ class Application extends BaseApplication
         $commands[] = new Command\InfrastructureDestroyCommand();
         $commands[] = new Command\UtilityComputePricingCommand();
         $commands[] = new Command\UtilityDevReloadCommand();
-        $commands[] = new Command\UtilityTagInstanceVolumesCommand();
+        $commands[] = new Command\UtilityTagResourcesCommand();
         $commands[] = new Command\UtilityInitializeNetworkCommand();
         $commands[] = new Command\OpenvpnRebuildPackagesCommand();
         $commands[] = new Command\OpenvpnReloadServersCommand();
         $commands[] = new Command\OpenvpnSignCertificateCommand();
         $commands[] = new Command\OpenvpnGenerateProfileCommand();
+        $commands[] = new Command\InceptionStartCommand();
+        $commands[] = new Command\InceptionProvisionBoshCommand();
 
         return $commands;
     }

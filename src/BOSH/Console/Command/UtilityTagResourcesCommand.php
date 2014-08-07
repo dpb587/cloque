@@ -10,12 +10,12 @@ use Symfony\Component\Console\Command\Command;
 use Aws\Ec2\Ec2Client;
 use Symfony\Component\Yaml\Yaml;
 
-class UtilityTagInstanceVolumesCommand extends Command
+class UtilityTagResourcesCommand extends Command
 {
     protected function configure()
     {
         $this
-            ->setName('utility:tag-instance-volumes')
+            ->setName('utility:tag-resources')
             ->setDescription('Tag volumes attached to instances')
             ;
     }
@@ -24,8 +24,16 @@ class UtilityTagInstanceVolumesCommand extends Command
     {
         $network = Yaml::parse(file_get_contents($input->getOption('basedir') . '/network.yml'));
 
-        foreach ($network['regions'] as $regionData) {
+        foreach ($network['regions'] as $regionName => $regionData) {
             $region = $regionData['region'];
+
+            if ('global' == $regionName) {
+                continue;
+            } elseif (!file_exists($input->getOption('basedir') . '/compiled/' . $regionName . '/core/infrastructure--state.json')) {
+                continue;
+            }
+
+            $infraCore = json_decode(file_get_contents($input->getOption('basedir') . '/compiled/' . $regionName . '/core/infrastructure--state.json'), true);
 
             $output->writeln('> <comment>reviewing ' . $region . '</comment>...');
 
@@ -38,6 +46,10 @@ class UtilityTagInstanceVolumesCommand extends Command
                     [
                         'Name' => 'instance-state-name',
                         'Values' => [ 'running', 'stopped' ],
+                    ],
+                    [
+                        'Name' => 'vpc-id',
+                        'Values' => [ $infraCore['VpcId'] ],
                     ],
                 ],
             ]);
