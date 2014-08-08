@@ -25,6 +25,7 @@ class Application extends BaseApplication
         $commands = parent::getDefaultCommands();
 
         $commands[] = new Command\BoshApplyCommand();
+        $commands[] = new Command\BoshGoCommand();
         $commands[] = new Command\BoshCompileCommand();
         $commands[] = new Command\BoshDestroyCommand();
         $commands[] = new Command\BoshDiffCommand();
@@ -32,11 +33,13 @@ class Application extends BaseApplication
         $commands[] = new Command\BoshListCommand();
         $commands[] = new Command\BoshReleaseListCommand();
         $commands[] = new Command\BoshReleaseUploadCommand();
+        $commands[] = new Command\BoshStemcellUploadCommand();
         $commands[] = new Command\InfrastructureCompileCommand();
         $commands[] = new Command\InfrastructureReloadStateCommand();
         $commands[] = new Command\InfrastructureDiffCommand();
         $commands[] = new Command\InfrastructureApplyCommand();
         $commands[] = new Command\InfrastructureDestroyCommand();
+        $commands[] = new Command\InfrastructureGoCommand();
         $commands[] = new Command\UtilityComputePricingCommand();
         $commands[] = new Command\UtilityDevReloadCommand();
         $commands[] = new Command\UtilityTagResourcesCommand();

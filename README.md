@@ -11,21 +11,13 @@
 
     vim global/core/infrastructure.json # see share
 
-    cloque infrastructure:compile global core
-    cloque infrastructure:apply global core --aws-cloudformation 'Capabilities=["CAPABILITY_IAM"]'
-    cloque infrastructure:reload-state global core
+    cloque infrastructure:go global core --aws-cloudformation 'Capabilities=["CAPABILITY_IAM"]'
 
-    cloque infrastructure:compile aws-usw2 core
-    cloque infrastructure:apply aws-usw2 core
-    cloque infrastructure:reload-state aws-usw2 core
+    cloque infrastructure:go aws-usw2 core
 
-    cloque infrastructure:compile aws-usw2 bosh
-    cloque infrastructure:apply aws-usw2 bosh
-    cloque infrastructure:reload-state aws-usw2 bosh
+    cloque infrastructure:go aws-usw2 bosh
 
     cloque bosh:compile aws-usw2 bosh
-    cloque bosh:apply aws-usw2 bosh
-    cloque bosh:reload-state aws-usw2 bosh
 
     cloque inception:start aws-usw2 \
       --subnet `cat compiled/aws-usw2/core/infrastructure--state.json | jq -r '.SubnetZ0PublicId'` \
@@ -34,7 +26,11 @@
 
     cloque inception:provision-bosh aws-usw2 ami-6b2b535b
 
-    ( cd aws-usw2 && bosh target http://192.168.1.2:25555 )
+    ( cd aws-usw2 && bosh target https://192.168.1.2:25555 && bosh create user "$USER" && bosh login "$USER" )
+
+    # now do stuff
+    cloque bosh:stemcell:upload aws-usw2 https://example.com/stemcell.tgz
+    cloque bosh:go aws-usw2 logsearch
 
 
 # OpenVPN Client

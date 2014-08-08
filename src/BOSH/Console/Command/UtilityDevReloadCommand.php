@@ -28,12 +28,10 @@ class UtilityDevReloadCommand extends Command
                         InputArgument::REQUIRED,
                         'Deployment name'
                     ),
-                    new InputOption(
-                        'manifest',
-                        null,
-                        InputOption::VALUE_REQUIRED,
-                        'Manifest name',
-                        'manifest'
+                    new InputArgument(
+                        'component',
+                        InputArgument::OPTIONAL,
+                        'Component name'
                     ),
                 ]
             )
@@ -42,36 +40,12 @@ class UtilityDevReloadCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $envLocalCore = json_decode(file_get_contents($input->getOption('basedir') . '/' . $input->getArgument('director') . '/.compiled/core/cloudformation--env.json'), true);
+        $network = YAML::parse(file_get_contents($input->getOption('basedir') . '/network.yml'));
 
-        $directorDir = $input->getOption('basedir') . '/' . $input->getArgument('director');
-        $deploymentDir = $directorDir . '/' . $input->getArgument('deployment');
-        $manifestFile = $deploymentDir . '/' . $input->getOption('manifest') . '.yml';
-
-        $manpath = uniqid($directorDir . '/.compiled/bosh-manifest/');
-
-        passthru(
-            sprintf(
-                'mkdir -p %s && %s --basedir=%s compile:deployment --manifest %s %s %s > %s',
-                escapeshellarg(dirname($manpath)),
-                escapeshellarg($_SERVER['argv'][0]),
-                escapeshellarg($input->getOption('basedir')),
-                escapeshellarg($input->getOption('manifest')),
-                escapeshellarg($input->getArgument('director')),
-                escapeshellarg($input->getArgument('deployment')),
-                escapeshellarg($manpath)
-            ),
-            $return_var
-        );
-
-        if ($return_var) {
-            return $return_var;
-        }
-
-        $mymanifest = Yaml::parse(file_get_contents($manpath));
+        $mymanifest = Yaml::parse(file_get_contents($input->getOption('basedir') . '/compiled/' . $input->getArgument('director') . '/' . $input->getArgument('deployment') . '/bosh' . ($input->getArgument('component') ? ('--' . $input->getArgument('component')) : '') . '.yml'));
 
         $awsEc2 = \Aws\Ec2\Ec2Client::factory([
-            'region' => $envLocalCore['Region'],
+            'region' => $network['regions'][$input->getArgument('director')]['region'],
         ]);
 
         foreach ($mymanifest['jobs'] as $job) {
@@ -113,21 +87,32 @@ class UtilityDevReloadCommand extends Command
                 if ('snapshot_copy' == $reloadTask['method']) {
                     $output->writeln('  > <comment>finding snapshot</comment>...');
 
-                    $snapshots = $awsEc2->describeSnapshots([
-                        'Filters' => [
-                            [
-                                'Name' => 'tag:Name',
-                                'Values' => [
-                                    $reloadTask['name'],
-                                ],
-                            ],
-                            [
-                                'Name' => 'status',
-                                'Values' => [
-                                    'completed',
-                                ],
+                    $filters = [
+                        [
+                            'Name' => 'status',
+                            'Values' => [
+                                'completed',
                             ],
                         ],
+                        [
+                            'Name' => 'tag:Name',
+                            'Values' => [
+                                $reloadTask['name'] . '/main/0/sdf',
+                            ],
+                        ],
+                    ];
+
+                    if (isset($reloadTask['director'])) {
+                        $filters[] = [
+                            'Name' => 'tag:director_name',
+                            'Values' => [
+                                $reloadTask['director'],
+                            ],
+                        ];
+                    }
+
+                    $snapshots = $awsEc2->describeSnapshots([
+                        'Filters' => $filters,
                     ]);
 
                     $latestSnapshot = null;
@@ -301,6 +286,10 @@ class UtilityDevReloadCommand extends Command
     {
         $aws = Yaml::parse(file_get_contents($input->getOption('basedir') . '/global/private/aws.yml'));
 
-        passthru('ssh -i ' . $input->getOption('basedir') . '/' . $aws['ssh_key_file'] . ' -t -q vcap@' . $job['networks'][0]['static_ips'][0] . ' ' . escapeshellarg('/bin/bash -c ' . escapeshellarg('echo c1oudc0w | sudo -S ' . escapeshellarg('/bin/bash -c ' . escapeshellarg('set -e ; ' . $command)))));
+        passthru('ssh -i ' . $input->getOption('basedir') . '/' . $aws['ssh_key_file'] . ' -t -q vcap@' . $job['networks'][0]['static_ips'][0] . ' -- /bin/bash -c ' . escapeshellarg('echo -n c1oudc0w | sudo -S ' . escapeshellarg('/bin/bash -c ' . escapeshellarg('set -e ; ' . $command))), $return_var);
+
+        if ($return_var) {
+            throw new \RuntimeException('Exit code was ' . $return_var);
+        }
     }
 }

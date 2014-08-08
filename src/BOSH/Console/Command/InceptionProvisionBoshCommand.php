@@ -109,5 +109,33 @@ class InceptionProvisionBoshCommand extends Command
                 escapeshellarg($input->getOption('basedir') . '/compiled/' . $input->getArgument('locality') . '/bosh-deployments.yml')
             )
         );
+
+
+        $output->write('> <comment>tagging</comment>...');
+
+        # symfony yaml doesn't like ruby names
+        preg_match('/\s+:vm_cid:\s+(.*)/', file_get_contents($input->getOption('basedir') . '/compiled/' . $input->getArgument('locality') . '/bosh-deployments.yml'), $microbosh);
+
+        $awsEc2->createTags([
+            'Resources' => [
+                $microbosh[1],
+            ],
+            'Tags' => [
+                [
+                    'Key' => 'Name',
+                    'Value' => 'microbosh',
+                ],
+                [
+                    'Key' => 'deployment',
+                    'Value' => 'bosh',
+                ],
+                [
+                    'Key' => 'director',
+                    'Value' => $network['root']['name'] . '-' . $input->getArgument('locality'),
+                ],
+            ],
+        ]);
+
+        $output->writeln('done');
     }
 }

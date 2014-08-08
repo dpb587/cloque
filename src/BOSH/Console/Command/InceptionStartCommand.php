@@ -113,21 +113,21 @@ class InceptionStartCommand extends Command
         $addTags = [];
 
         $expectedTags = [
-            'director' => 'cloque',
-            'deployment' => $network['root']['name'] . '-' . $input->getArgument('locality'),
-            'Name' => 'inception',
+            'director' => $network['root']['name'] . '-' . $input->getArgument('locality'),
+            'deployment' => 'cloque/inception',
+            'Name' => 'main',
         ];
 
         foreach ($expectedTags as $tagKey => $tagValue) {
             if (empty($niceVolumeTags[$tagKey])) {
-                $output->writeln('  > <comment>adding ' . $tagKey . '</comment> -> ' . $tagValue);
+                $output->writeln('  > <comment>tagging ' . $tagKey . '</comment> -> ' . $tagValue);
 
                 $addTags[] = [
                     'Key' => $tagKey,
                     'Value' => $tagValue,
                 ];
             } elseif ($niceVolumeTags[$tagKey] != $tagValue) {
-                $output->writeln('  > <comment>updating ' . $tagKey . '</comment> -> ' . $niceVolumeTags[$tagKey] . ' -> ' . $tagValue);
+                $output->writeln('  > <comment>tagging ' . $tagKey . '</comment> -> ' . $niceVolumeTags[$tagKey] . ' -> ' . $tagValue);
 
                 $addTags[] = [
                     'Key' => $tagKey,
@@ -138,10 +138,10 @@ class InceptionStartCommand extends Command
 
         if ($addTags) {
             $awsEc2->createTags([
-               'Resources' => [
-                   $instance['InstanceId'],
-               ],
-               'Tags' => $addTags,
+                'Resources' => [
+                    $instance['InstanceId'],
+                ],
+                'Tags' => $addTags,
             ]);
         }
 
@@ -178,7 +178,7 @@ class InceptionStartCommand extends Command
                 }
 
                 if ('running' == $currStatus) {
-                    $output->writeln('');
+                    $output->writeln('done');
 
                     break;
                 }
@@ -191,7 +191,7 @@ class InceptionStartCommand extends Command
         $output->write('> <comment>waiting for ssh</comment>...');
 
         while (true) {
-            $sh = fsockopen($instance['PublicIpAddress'], 22, $errno, $errstr, 4);
+            $sh = @fsockopen($instance['PublicIpAddress'], 22, $errno, $errstr, 8);
 
             $output->write('.');
 
@@ -203,7 +203,7 @@ class InceptionStartCommand extends Command
                 break;
             }
 
-            sleep(2);
+            sleep(4);
         }
 
 

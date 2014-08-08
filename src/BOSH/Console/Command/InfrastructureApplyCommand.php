@@ -112,25 +112,35 @@ class InfrastructureApplyCommand extends Command
             $apiArgs['Tags'] = [
                 [
                     'Key' => 'deployment',
-                    'Value' => $input->getArgument('locality') . '.' . $network['root']['name'] . '.' . $network['root']['host'],
+                    'Value' => 'infra/' . $input->getArgument('deployment') . ($input->getOption('component') ? ('/' . $input->getOption('component')) : ''),
                 ],
                 [
                     'Key' => 'director',
-                    'Value' => 'aws.amazon.com',
+                    'Value' => $input->getArgument('locality') . '.' . $network['root']['name'],
                 ],
             ];
         }
 
 
-        $output->writeln('> <comment>deploying</comment>...');
+        $output->write('> <comment>deploying</comment>...');
 
-        $awsCloudFormation->$apiCall(array_merge($apiArgs, [
-            'StackName' => $stackName,
-            'TemplateBody' => file_get_contents($destManifest),
-        ]));
+        try {
+            $awsCloudFormation->$apiCall(array_merge($apiArgs, [
+                'StackName' => $stackName,
+                'TemplateBody' => file_get_contents($destManifest),
+            ]));
+
+            $output->writeln('done');
+        } catch (\Aws\CloudFormation\Exception\CloudFormationException $e) {
+            if ('No updates are to be performed.' == $e->getMessage()) {
+                $output->writeln('skipped');
+            } else {
+                throw $e;
+            }
+        }
 
 
-        $output->write('  > <comment>waiting</comment>...');
+        $output->write('> <comment>waiting</comment>...');
 
         $currStatus = 'waiting';
 
@@ -154,11 +164,11 @@ class InfrastructureApplyCommand extends Command
 
                 return 1;
             } elseif (preg_match('/_COMPLETE$/', $currStatus)) {
-                $output->writeln('');
+                $output->writeln('done');
 
                 break;
             } elseif (preg_match('/_FAILED$/', $currStatus)) {
-                $output->writeln('');
+                $output->writeln('done');
 
                 return 1;
             }

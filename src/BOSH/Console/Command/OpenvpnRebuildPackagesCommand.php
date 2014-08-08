@@ -147,7 +147,8 @@ tls-server
 client-to-client
 topology subnet
 persist-key
-persist-tun'));
+persist-tun
+'));
 
             $output->writeln('created');
 
@@ -175,7 +176,8 @@ mute-replay-warnings
 remote-cert-tls server
 verb 3
 mute 20
-tls-client');
+tls-client
+');
 
                 $output->writeln('created');
 
@@ -204,7 +206,7 @@ tls-client');
 
             $output->write('  > <comment>cleaning</comment>...');
 
-            passthru('rm -fr ' . escapeshellarg($mdir) . ' ' . escapeshellarg($mdir . '/openvpn-package-build.tgz'));
+            passthru('rm -fr ' . escapeshellarg($mdir) . ' ' . escapeshellarg($mdir . '/../openvpn-package-build.tgz'));
 
             $output->writeln('done');
         }
