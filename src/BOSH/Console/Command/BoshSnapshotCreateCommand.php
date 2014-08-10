@@ -10,13 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshDestroyCommand extends Command
+class BoshSnapshotCreateCommand extends Command
 {
     protected function configure()
     {
         $this
-            ->setName('bosh:destroy')
-            ->setDescription('Completely destroy a BOSH deployment')
+            ->setName('bosh:snapshot:create')
+            ->setDescription('Create a new snapshot')
             ->setDefinition(
                 [
                     new InputArgument(
@@ -28,6 +28,16 @@ class BoshDestroyCommand extends Command
                         'deployment',
                         InputArgument::REQUIRED,
                         'Deployment name'
+                    ),
+                    new InputArgument(
+                        'job',
+                        InputArgument::OPTIONAL,
+                        'Job'
+                    ),
+                    new InputArgument(
+                        'index',
+                        InputArgument::OPTIONAL,
+                        'Index'
                     ),
                     new InputOption(
                         'component',
@@ -51,6 +61,12 @@ class BoshDestroyCommand extends Command
             $input->getOption('component') ? ('-' . $input->getOption('component')) : ''
         );
 
+        $job = explode('/', $input->getArgument('job'), 2);
+        $index = $input->getArgument('index') ?: (isset($job[1]) ? $job[1] : null);
+        $job = isset($job[0]) ? $job[0] : null;
+
+        $directorDir = $input->getOption('basedir') . '/' . $input->getArgument('director');
+
         $descriptorspec = array(
            0 => STDIN,
            1 => STDOUT,
@@ -59,12 +75,13 @@ class BoshDestroyCommand extends Command
 
         $ph = proc_open(
             sprintf(
-                'bosh %s %s -c %s -d %s delete deployment %s',
+                'bosh %s %s -c %s -d %s take snapshot %s %s',
                 $output->isDecorated() ? '--color' : '--no-color',
                 $input->isInteractive() ? '' : '--non-interactive',
-                escapeshellarg($input->getOption('basedir') . '/' . $input->getArgument('director') . '/.bosh_config'),
+                escapeshellarg($directorDir . '/.bosh_config'),
                 escapeshellarg($destManifest),
-                escapeshellarg($input->getArgument('deployment') . ($input->getOption('component') ? ('-' . $input->getOption('component')) : ''))
+                (null !== $job) ? escapeshellarg($job) : '',
+                (null !== $index) ? escapeshellarg($index) : ''
             ),
             $descriptorspec,
             $pipes,

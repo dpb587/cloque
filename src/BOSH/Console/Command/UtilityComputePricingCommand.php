@@ -18,7 +18,7 @@ class UtilityComputePricingCommand extends Command
     {
         $this
             ->setName('utility:compute-pricing')
-            ->setDescription('Compute pricing from active instances')
+            ->setDescription('Compute pricing estimate from active resources')
             ;
     }
 
@@ -63,8 +63,16 @@ class UtilityComputePricingCommand extends Command
 
         $network = Yaml::parse(file_get_contents($input->getOption('basedir') . '/network.yml'));
 
-        foreach ($network['regions'] as $regionData) {
+        foreach ($network['regions'] as $regionName => $regionData) {
             $region = $regionData['region'];
+
+            if ('global' == $regionName) {
+                continue;
+            } elseif (!file_exists($input->getOption('basedir') . '/compiled/' . $regionName . '/core/infrastructure--state.json')) {
+                continue;
+            }
+
+            $infraCore = json_decode(file_get_contents($input->getOption('basedir') . '/compiled/' . $regionName . '/core/infrastructure--state.json'), true);
 
             $output->writeln('> <comment>analyzing ' . $region . '</comment>...');
 
@@ -77,6 +85,10 @@ class UtilityComputePricingCommand extends Command
                     [
                         'Name' => 'instance-state-name',
                         'Values' => [ 'running' ],
+                    ],
+                    [
+                        'Name' => 'vpc-id',
+                        'Values' => [ $infraCore['VpcId'] ],
                     ],
                 ],
             ]);

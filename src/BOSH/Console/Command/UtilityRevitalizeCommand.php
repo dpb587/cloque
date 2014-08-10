@@ -9,13 +9,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Yaml\Yaml;
 
-class UtilityDevReloadCommand extends Command
+class UtilityRevitalizeCommand extends Command
 {
     protected function configure()
     {
         $this
-            ->setName('utility:dev:reload')
-            ->setDescription('Deploy the httpassetcache deployment')
+            ->setName('utility:revitalize')
+            ->setDescription('Revitalize a deployment')
             ->setDefinition(
                 [
                     new InputArgument(
@@ -28,10 +28,12 @@ class UtilityDevReloadCommand extends Command
                         InputArgument::REQUIRED,
                         'Deployment name'
                     ),
-                    new InputArgument(
+                    new InputOption(
                         'component',
-                        InputArgument::OPTIONAL,
-                        'Component name'
+                        null,
+                        InputOption::VALUE_REQUIRED,
+                        'Component name',
+                        null
                     ),
                 ]
             )
@@ -42,7 +44,7 @@ class UtilityDevReloadCommand extends Command
     {
         $network = YAML::parse(file_get_contents($input->getOption('basedir') . '/network.yml'));
 
-        $mymanifest = Yaml::parse(file_get_contents($input->getOption('basedir') . '/compiled/' . $input->getArgument('director') . '/' . $input->getArgument('deployment') . '/bosh' . ($input->getArgument('component') ? ('--' . $input->getArgument('component')) : '') . '.yml'));
+        $mymanifest = Yaml::parse(file_get_contents($input->getOption('basedir') . '/compiled/' . $input->getArgument('director') . '/' . $input->getArgument('deployment') . '/bosh' . ($input->getOption('component') ? ('--' . $input->getOption('component')) : '') . '.yml'));
 
         $awsEc2 = \Aws\Ec2\Ec2Client::factory([
             'region' => $network['regions'][$input->getArgument('director')]['region'],
@@ -83,8 +85,8 @@ class UtilityDevReloadCommand extends Command
             $output->writeln('done');
 
 
-            foreach ($job['_dev_reload'] as $reloadTask) {
-                if ('snapshot_copy' == $reloadTask['method']) {
+            foreach ($job['cloque.revitalize'] as $revitalizeTask) {
+                if ('snapshot_copy' == $revitalizeTask['method']) {
                     $output->writeln('  > <comment>finding snapshot</comment>...');
 
                     $filters = [
@@ -94,19 +96,31 @@ class UtilityDevReloadCommand extends Command
                                 'completed',
                             ],
                         ],
-                        [
-                            'Name' => 'tag:Name',
-                            'Values' => [
-                                $reloadTask['name'] . '/main/0/sdf',
-                            ],
-                        ],
                     ];
 
-                    if (isset($reloadTask['director'])) {
+                    if (isset($revitalizeTask['id'])) {
+                        $filters[] = [
+                            'Name' => 'snapshot-id',
+                            'Values' => [
+                                $revitalizeTask['id'],
+                            ],
+                        ];
+                    }
+
+                    if (isset($revitalizeTask['deployment'])) {
+                        $filters[] = [
+                            'Name' => 'tag:Name',
+                            'Values' => [
+                                $revitalizeTask['deployment'] . '/main/0/sdf',
+                            ],
+                        ];
+                    }
+
+                    if (isset($revitalizeTask['director'])) {
                         $filters[] = [
                             'Name' => 'tag:director_name',
                             'Values' => [
-                                $reloadTask['director'],
+                                $revitalizeTask['director'],
                             ],
                         ];
                     }
@@ -164,7 +178,7 @@ class UtilityDevReloadCommand extends Command
                         }
 
                         if ('available' == $currStatus) {
-                            $output->writeln('');
+                            $output->writeln('done');
 
                             break;
                         }
@@ -203,7 +217,7 @@ class UtilityDevReloadCommand extends Command
                         }
 
                         if ('in-use' == $currStatus) {
-                            $output->writeln('');
+                            $output->writeln('done');
 
                             break;
                         }
@@ -219,7 +233,7 @@ class UtilityDevReloadCommand extends Command
 
                     $output->writeln('  > <comment>transferring data</comment>...');
 
-                    $this->sshexec($input, $output, $job, 'cd /var/vcap/store && for DIR in `ls /tmp/xfer-xvdj` ; do [ ! -e $DIR ] || ( echo -n "  > removing $DIR..." ; rm -fr $DIR ; echo "done" ) ; echo -n "  > restoring $DIR..." ; cp -pr /tmp/xfer-xvdj/$DIR $DIR ; echo "done" ; done');
+                    $this->sshexec($input, $output, $job, 'cd /var/vcap/store && for DIR in `ls /tmp/xfer-xvdj` ; do if [[ "lost+found" != "$DIR" ]] ; then [ ! -e $DIR ] || ( echo -n "  > removing $DIR..." ; rm -fr $DIR ; echo "done" ) ; echo -n "  > restoring $DIR..." ; cp -pr /tmp/xfer-xvdj/$DIR $DIR ; echo "done" ; fi ; done');
 
 
                     $output->writeln('  > <comment>unmounting volume</comment>...');
@@ -257,7 +271,7 @@ class UtilityDevReloadCommand extends Command
                         }
 
                         if ('available' == $currStatus) {
-                            $output->writeln('');
+                            $output->writeln('done');
 
                             break;
                         }
@@ -272,7 +286,7 @@ class UtilityDevReloadCommand extends Command
                         'VolumeId' => $volume['VolumeId'],
                     ]);
                 } else {
-                    throw new \RuntimeException('Unknown reload method: ' . $reloadTask['method']);
+                    throw new \RuntimeException('Unknown reload method: ' . $revitalizeTask['method']);
                 }
             }
 
@@ -286,10 +300,11 @@ class UtilityDevReloadCommand extends Command
     {
         $aws = Yaml::parse(file_get_contents($input->getOption('basedir') . '/global/private/aws.yml'));
 
-        passthru('ssh -i ' . $input->getOption('basedir') . '/' . $aws['ssh_key_file'] . ' -t -q vcap@' . $job['networks'][0]['static_ips'][0] . ' -- /bin/bash -c ' . escapeshellarg('echo -n c1oudc0w | sudo -S ' . escapeshellarg('/bin/bash -c ' . escapeshellarg('set -e ; ' . $command))), $return_var);
+        passthru($exec = 'ssh -i ' . $input->getOption('basedir') . '/' . $aws['ssh_key_file'] . ' -q vcap@' . $job['networks'][0]['static_ips'][0] . ' ' . escapeshellarg('/bin/bash -c ' . escapeshellarg('echo c1oudc0w | sudo -p "" -S -- /bin/bash -c ' . escapeshellarg('set -e ; ' . $command))), $return_var);
+        #passthru($exec = 'ssh -i ' . $input->getOption('basedir') . '/' . $aws['ssh_key_file'] . ' -t -q vcap@' . $job['networks'][0]['static_ips'][0] . ' ' . escapeshellarg('sudo /bin/bash -c ' . escapeshellarg('set -e ; ' . $command)), $return_var);
 
         if ($return_var) {
-            throw new \RuntimeException('Exit code was ' . $return_var);
+            throw new \RuntimeException($exec . ' --> exit ' . $return_var);
         }
     }
 }

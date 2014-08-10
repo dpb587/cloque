@@ -34,6 +34,7 @@ class Application extends BaseApplication
         $commands[] = new Command\BoshReleaseListCommand();
         $commands[] = new Command\BoshReleaseUploadCommand();
         $commands[] = new Command\BoshStemcellUploadCommand();
+        $commands[] = new Command\BoshSnapshotCreateCommand();
         $commands[] = new Command\InfrastructureCompileCommand();
         $commands[] = new Command\InfrastructureReloadStateCommand();
         $commands[] = new Command\InfrastructureDiffCommand();
@@ -41,7 +42,7 @@ class Application extends BaseApplication
         $commands[] = new Command\InfrastructureDestroyCommand();
         $commands[] = new Command\InfrastructureGoCommand();
         $commands[] = new Command\UtilityComputePricingCommand();
-        $commands[] = new Command\UtilityDevReloadCommand();
+        $commands[] = new Command\UtilityRevitalizeCommand();
         $commands[] = new Command\UtilityTagResourcesCommand();
         $commands[] = new Command\UtilityInitializeNetworkCommand();
         $commands[] = new Command\OpenvpnRebuildPackagesCommand();
@@ -50,6 +51,9 @@ class Application extends BaseApplication
         $commands[] = new Command\OpenvpnGenerateProfileCommand();
         $commands[] = new Command\InceptionStartCommand();
         $commands[] = new Command\InceptionProvisionBoshCommand();
+        $commands[] = new Command\BoshUtilityPackageDownloadsCommand();
+        $commands[] = new Command\BoshUtilityPackageDockerBuildCommand();
+        $commands[] = new Command\InfrastructureStateCommand();
 
         return $commands;
     }
@@ -66,15 +70,6 @@ class Application extends BaseApplication
     protected function getDefaultInputDefinition()
     {
         $definition = parent::getDefaultInputDefinition();
-
-        $definition->addOption(
-            new InputOption(
-                'basename',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'Base name'
-            )
-        );
 
         $definition->addOption(
             new InputOption(

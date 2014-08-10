@@ -110,6 +110,7 @@ class InceptionStartCommand extends Command
 
         $output->writeln('  > <info>instance-id</info> -> ' . $instance['InstanceId']);
 
+        $niceInstanceTags = $this->remapTags($instance['Tags']);
         $addTags = [];
 
         $expectedTags = [
@@ -119,15 +120,15 @@ class InceptionStartCommand extends Command
         ];
 
         foreach ($expectedTags as $tagKey => $tagValue) {
-            if (empty($niceVolumeTags[$tagKey])) {
+            if (empty($niceInstanceTags[$tagKey])) {
                 $output->writeln('  > <comment>tagging ' . $tagKey . '</comment> -> ' . $tagValue);
 
                 $addTags[] = [
                     'Key' => $tagKey,
                     'Value' => $tagValue,
                 ];
-            } elseif ($niceVolumeTags[$tagKey] != $tagValue) {
-                $output->writeln('  > <comment>tagging ' . $tagKey . '</comment> -> ' . $niceVolumeTags[$tagKey] . ' -> ' . $tagValue);
+            } elseif ($niceInstanceTags[$tagKey] != $tagValue) {
+                $output->writeln('  > <comment>tagging ' . $tagKey . '</comment> -> ' . $niceInstanceTags[$tagKey] . ' -> ' . $tagValue);
 
                 $addTags[] = [
                     'Key' => $tagKey,
@@ -193,6 +194,7 @@ class InceptionStartCommand extends Command
         while (true) {
             $sh = @fsockopen($instance['PublicIpAddress'], 22, $errno, $errstr, 8);
 
+            $output->write($errstr);
             $output->write('.');
 
             if ($sh) {
@@ -254,5 +256,16 @@ class InceptionStartCommand extends Command
                 escapeshellarg('~/cloque/global/private/.')
             )
         );
+    }
+
+    protected function remapTags(array $tags)
+    {
+        $remap = [];
+
+        foreach ($tags as $tag) {
+            $remap[$tag['Key']] = $tag['Value'];
+        }
+
+        return $remap;
     }
 }

@@ -7,27 +7,35 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Command\Command;
-use BOSH\Deployment\ManifestModel;
+use BOSH\Deployment\TemplateEngine;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshDestroyCommand extends Command
+class InfrastructureStateCommand extends Command
 {
     protected function configure()
     {
         $this
-            ->setName('bosh:destroy')
-            ->setDescription('Completely destroy a BOSH deployment')
+            ->setName('infrastructure:dump-state')
+            ->setAliases([
+                'infra:state',
+            ])
+            ->setDescription('Dump the state')
             ->setDefinition(
                 [
                     new InputArgument(
-                        'director',
+                        'locality',
                         InputArgument::REQUIRED,
-                        'Director name'
+                        'Locality name'
                     ),
                     new InputArgument(
                         'deployment',
                         InputArgument::REQUIRED,
                         'Deployment name'
+                    ),
+                    new InputArgument(
+                        'jq',
+                        InputArgument::OPTIONAL,
+                        'jq command'
                     ),
                     new InputOption(
                         'component',
@@ -44,28 +52,21 @@ class BoshDestroyCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $destManifest = sprintf(
-            '%s/compiled/%s/%s/bosh%s.yml',
+            '%s/compiled/%s/%s/infrastructure%s--state.json',
             $input->getOption('basedir'),
-            $input->getArgument('director'),
+            $input->getArgument('locality'),
             $input->getArgument('deployment'),
             $input->getOption('component') ? ('-' . $input->getOption('component')) : ''
         );
 
         $descriptorspec = array(
-           0 => STDIN,
+           0 => fopen($destManifest, 'r'),
            1 => STDOUT,
            2 => STDERR,
         );
 
         $ph = proc_open(
-            sprintf(
-                'bosh %s %s -c %s -d %s delete deployment %s',
-                $output->isDecorated() ? '--color' : '--no-color',
-                $input->isInteractive() ? '' : '--non-interactive',
-                escapeshellarg($input->getOption('basedir') . '/' . $input->getArgument('director') . '/.bosh_config'),
-                escapeshellarg($destManifest),
-                escapeshellarg($input->getArgument('deployment') . ($input->getOption('component') ? ('-' . $input->getOption('component')) : ''))
-            ),
+            'jq -r ' . escapeshellarg($input->getArgument('jq') ?: '.'),
             $descriptorspec,
             $pipes,
             getcwd(),

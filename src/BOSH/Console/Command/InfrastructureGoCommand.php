@@ -59,10 +59,6 @@ class InfrastructureGoCommand extends Command
             'deployment' => $input->getArgument('deployment'),
         ];
 
-        if ($input->getOption('basedir')) {
-            $baseargs['--basedir'] = $input->getOption('basedir');
-        }
-
         if ($input->getOption('component')) {
             $baseargs['--component'] = $input->getOption('component');
         }
@@ -70,6 +66,7 @@ class InfrastructureGoCommand extends Command
         $this->subrun(
             'infrastructure:compile',
             $baseargs,
+            $input,
             $output
         );
 
@@ -78,20 +75,31 @@ class InfrastructureGoCommand extends Command
             array_merge($baseargs, [
                 '--aws-cloudformation' => $input->getOption('aws-cloudformation'),
             ]),
+            $input,
             $output
         );
 
         $this->subrun(
             'infrastructure:reload-state',
             $baseargs,
+            $input,
             $output
         );
     }
 
-    protected function subrun($name, array $arguments, OutputInterface $output)
+    protected function subrun($name, array $arguments, InputInterface $input, OutputInterface $output)
     {
+        if ($input->getOption('basedir')) {
+            $arguments['--basedir'] = $input->getOption('basedir');
+        }
+
+        $arguments['command'] = $name;
+
+        $subinput = new ArrayInput($arguments);
+        $subinput->setInteractive($input->isInteractive());
+
         $return = $this->getApplication()->find($name)->run(
-            new ArrayInput(array_merge($arguments, [ 'command' => $name ])),
+            $subinput,
             $output
         );
 
