@@ -76,7 +76,7 @@ class BoshSshCommand extends Command
 
         $ph = proc_open(
             sprintf(
-                'bosh %s -c %s -d %s ssh --default_password asdf %s',
+                'bosh %s -c %s -d %s ssh --default_password c1oudc0w %s',
                 $output->isDecorated() ? '--color' : '--no-color',
                 escapeshellarg($input->getOption('basedir') . '/' . $input->getArgument('locality') . '/.bosh_config'),
                 escapeshellarg($destManifest),

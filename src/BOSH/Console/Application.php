@@ -54,6 +54,9 @@ class Application extends BaseApplication
         $commands[] = new Command\BoshUtilityPackageDownloadsCommand();
         $commands[] = new Command\BoshUtilityPackageDockerBuildCommand();
         $commands[] = new Command\InfrastructureStateCommand();
+        $commands[] = new Command\BoshSnapshotCleanupCommand();
+        $commands[] = new Command\BoshSnapshotCleanupSelfCommand();
+        $commands[] = new Command\UtilityLogsearchShipperMetricsCheckCommand();
 
         return $commands;
     }

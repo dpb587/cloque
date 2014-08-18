@@ -53,8 +53,9 @@ class BoshUtilityPackageDockerBuildCommand extends Command
         $dockerfile = [
             'FROM ubuntu:trusty',
             'RUN apt-get update && apt-get -y install build-essential cmake m4 unzip wget',
-            'RUN mkdir -p /var/vcap/packages/' . $input->getArgument('package'),
+            'RUN /bin/echo "./packaging" >> ~/.bash_history',
             'ENTRYPOINT /bin/bash',
+            'RUN mkdir -p /var/vcap/packages/' . $input->getArgument('package'),
             'ENV BOSH_COMPILE_TARGET /var/vcap/data/compile/' . $input->getArgument('package'),
             'ENV BOSH_INSTALL_TARGET /var/vcap/packages/' . $input->getArgument('package'),
             'WORKDIR /var/vcap/data/compile/' . $input->getArgument('package'),
