@@ -2,6 +2,7 @@
 
 namespace BOSH\Console;
 
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\Console\Application as BaseApplication;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -24,39 +25,20 @@ class Application extends BaseApplication
     {
         $commands = parent::getDefaultCommands();
 
-        $commands[] = new Command\BoshApplyCommand();
-        $commands[] = new Command\BoshGoCommand();
-        $commands[] = new Command\BoshCompileCommand();
-        $commands[] = new Command\BoshDestroyCommand();
-        $commands[] = new Command\BoshDiffCommand();
-        $commands[] = new Command\BoshSshCommand();
-        $commands[] = new Command\BoshListCommand();
-        $commands[] = new Command\BoshReleaseListCommand();
-        $commands[] = new Command\BoshReleaseUploadCommand();
-        $commands[] = new Command\BoshStemcellUploadCommand();
-        $commands[] = new Command\BoshSnapshotCreateCommand();
-        $commands[] = new Command\InfrastructureCompileCommand();
-        $commands[] = new Command\InfrastructureReloadStateCommand();
-        $commands[] = new Command\InfrastructureDiffCommand();
-        $commands[] = new Command\InfrastructureApplyCommand();
-        $commands[] = new Command\InfrastructureDestroyCommand();
-        $commands[] = new Command\InfrastructureGoCommand();
-        $commands[] = new Command\UtilityComputePricingCommand();
-        $commands[] = new Command\UtilityRevitalizeCommand();
-        $commands[] = new Command\UtilityTagResourcesCommand();
-        $commands[] = new Command\UtilityInitializeNetworkCommand();
-        $commands[] = new Command\OpenvpnRebuildPackagesCommand();
-        $commands[] = new Command\OpenvpnReloadServersCommand();
-        $commands[] = new Command\OpenvpnSignCertificateCommand();
-        $commands[] = new Command\OpenvpnGenerateProfileCommand();
-        $commands[] = new Command\InceptionStartCommand();
-        $commands[] = new Command\InceptionProvisionBoshCommand();
-        $commands[] = new Command\BoshUtilityPackageDownloadsCommand();
-        $commands[] = new Command\BoshUtilityPackageDockerBuildCommand();
-        $commands[] = new Command\InfrastructureStateCommand();
-        $commands[] = new Command\BoshSnapshotCleanupCommand();
-        $commands[] = new Command\BoshSnapshotCleanupSelfCommand();
-        $commands[] = new Command\UtilityLogsearchShipperMetricsCheckCommand();
+        $finder = new Finder();
+        $finder->files()->name('*Command.php')->in(__DIR__ . '/Command');
+
+        $prefix = __NAMESPACE__ . '\\Command';
+
+        foreach ($finder as $file) {
+            $class = $prefix . '\\' . $file->getBasename('.php');
+
+            $r = new \ReflectionClass($class);
+
+            if ($r->isSubclassOf('Symfony\\Component\\Console\\Command\\Command') && !$r->isAbstract() && !$r->getConstructor()->getNumberOfRequiredParameters()) {
+                $commands[] = $r->newInstance();
+            }
+        }
 
         return $commands;
     }

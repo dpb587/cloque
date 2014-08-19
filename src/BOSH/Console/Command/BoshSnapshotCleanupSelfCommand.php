@@ -24,6 +24,11 @@ class BoshSnapshotCleanupSelfCommand extends Command
                         InputArgument::REQUIRED,
                         'Director name'
                     ),
+                    new InputArgument(
+                        'interval',
+                        InputArgument::REQUIRED,
+                        'Interval to retain snapshots'
+                    ),
                 ]
             )
             ;
@@ -57,7 +62,7 @@ class BoshSnapshotCleanupSelfCommand extends Command
         ]);
 
         $now = new \DateTime();
-        $retain = clone $now; $retain->sub(new \DateInterval('P5D'));
+        $retain = clone $now; $retain->sub(new \DateInterval('P' . strtoupper($input->getArgument('interval'))));
 
         foreach ($snapshots['Snapshots'] as $snapshot) {
             $snapshot['StartTime'] = new \DateTime($snapshot['StartTime']);

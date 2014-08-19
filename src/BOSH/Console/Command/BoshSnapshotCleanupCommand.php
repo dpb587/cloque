@@ -109,7 +109,7 @@ class BoshSnapshotCleanupCommand extends Command
 
             $snapshots[] = [
                 'job' => $jobindex[0],
-                'index' => $jobindex[1],
+                'index' => (int) $jobindex[1],
                 'snapshot_cid' => trim($match['snapshot_cid']),
                 'created_at' => new \DateTime(trim($match['created_at'])),
                 'clean' => 'true' == trim($match['clean']),
