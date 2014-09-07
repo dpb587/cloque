@@ -10,37 +10,16 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\TemplateEngine;
 use Symfony\Component\Yaml\Yaml;
 
-class InfrastructureCompileCommand extends Command
+class InfrastructureCompileCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('infrastructure:compile')
             ->setAliases([
                 'infra:compile',
             ])
             ->setDescription('Deploy the httpassetcache deployment')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'locality',
-                        InputArgument::REQUIRED,
-                        'Locality name'
-                    ),
-                    new InputArgument(
-                        'deployment',
-                        InputArgument::REQUIRED,
-                        'Deployment name'
-                    ),
-                    new InputOption(
-                        'component',
-                        null,
-                        InputOption::VALUE_REQUIRED,
-                        'Component name',
-                        null
-                    ),
-                ]
-            )
             ;
     }
 
@@ -49,16 +28,16 @@ class InfrastructureCompileCommand extends Command
         $sourceManifest = sprintf(
             '%s/%s/%s/infrastructure%s.json',
             $input->getOption('basedir'),
-            $input->getArgument('locality'),
-            $input->getArgument('deployment'),
+            $input->getOption('director'),
+            $input->getOption('deployment'),
             $input->getOption('component') ? ('-' . $input->getOption('component')) : ''
         );
 
         $destManifest = sprintf(
             '%s/compiled/%s/%s/infrastructure%s.json',
             $input->getOption('basedir'),
-            $input->getArgument('locality'),
-            $input->getArgument('deployment'),
+            $input->getOption('director'),
+            $input->getOption('deployment'),
             $input->getOption('component') ? ('-' . $input->getOption('component')) : ''
         );
 
@@ -70,8 +49,8 @@ class InfrastructureCompileCommand extends Command
 
         $engine = new TemplateEngine(
             $input->getOption('basedir'),
-            $input->getArgument('locality'),
-            $input->getArgument('deployment')
+            $input->getOption('director'),
+            $input->getOption('deployment')
         );
 
         $result = file_get_contents($sourceManifest);

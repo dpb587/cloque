@@ -10,26 +10,17 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshSnapshotCleanupSelfCommand extends Command
+class BoshSnapshotCleanupSelfCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('bosh:snapshot:cleanup-self')
             ->setDescription('Cleanup director self snapshots')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'director',
-                        InputArgument::REQUIRED,
-                        'Director name'
-                    ),
-                    new InputArgument(
-                        'interval',
-                        InputArgument::REQUIRED,
-                        'Interval to retain snapshots'
-                    ),
-                ]
+            ->addArgument(
+                'interval',
+                InputArgument::REQUIRED,
+                'Interval to retain snapshots'
             )
             ;
     }
@@ -39,7 +30,7 @@ class BoshSnapshotCleanupSelfCommand extends Command
         $network = Yaml::parse(file_get_contents($input->getOption('basedir') . '/network.yml'));
 
         $awsEc2 = \Aws\Ec2\Ec2Client::factory([
-            'region' => $network['regions'][$input->getArgument('director')]['region'],
+            'region' => $network['regions'][$input->getOption('director')]['region'],
         ]);
 
         $snapshots = $awsEc2->describeSnapshots([
@@ -47,7 +38,7 @@ class BoshSnapshotCleanupSelfCommand extends Command
                 [
                     'Name' => 'tag:director_name',
                     'Values' => [
-                        $network['root']['name'] . '-' . $input->getArgument('director'),
+                        $network['root']['name'] . '-' . $input->getOption('director'),
                     ],
                 ],
                 [

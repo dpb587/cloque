@@ -11,26 +11,22 @@ use Aws\Ec2\Ec2Client;
 use Symfony\Component\Yaml\Yaml;
 use BOSH\Deployment\TemplateEngine;
 
-class OpenvpnGenerateProfileCommand extends Command
+class OpenvpnGenerateProfileCommand extends AbstractCommand
 {
     protected function configure()
     {
         $this
             ->setName('openvpn:generate-profile')
             ->setDescription('Generate an OVPN profile for a gateway')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'locality',
-                        InputArgument::REQUIRED,
-                        'Locality name'
-                    ),
-                    new InputArgument(
-                        'cn',
-                        InputArgument::REQUIRED,
-                        'Common name'
-                    ),
-                ]
+            ->addArgument(
+                'director',
+                InputArgument::REQUIRED,
+                'Director name'
+            )
+            ->addArgument(
+                'cn',
+                InputArgument::REQUIRED,
+                'Common name'
             )
             ;
     }
@@ -42,7 +38,7 @@ class OpenvpnGenerateProfileCommand extends Command
         $output->writeln('client');
         $output->writeln('dev tun');
         $output->writeln('proto tcp');
-        $output->writeln('remote gateway.' . $input->getArgument('locality') . '.' . $network['root']['name'] . '.' . $network['root']['host'] . ' 1194');
+        $output->writeln('remote gateway.' . $input->getArgument('director') . '.' . $network['root']['name'] . '.' . $network['root']['host'] . ' 1194');
         $output->writeln('comp-lzo');
         $output->writeln('resolv-retry infinite');
         $output->writeln('nobind');

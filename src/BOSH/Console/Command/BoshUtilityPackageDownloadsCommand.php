@@ -10,21 +10,17 @@ use Symfony\Component\Console\Command\Command;
 use Aws\Ec2\Ec2Client;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshUtilityPackageDownloadsCommand extends Command
+class BoshUtilityPackageDownloadsCommand extends AbstractCommand
 {
     protected function configure()
     {
         $this
             ->setName('bosh:utility:package-downloads')
             ->setDescription('Dump commands to download packaging spec files')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'file',
-                        InputArgument::REQUIRED | InputArgument::IS_ARRAY,
-                        'Specification file'
-                    ),
-                ]
+            ->addArgument(
+                'file',
+                InputArgument::REQUIRED | InputArgument::IS_ARRAY,
+                'Specification file'
             )
             ;
     }
@@ -36,7 +32,6 @@ class BoshUtilityPackageDownloadsCommand extends Command
         foreach ($input->getArgument('file') as $file) {
             $spec = file_get_contents('packages/' . $file . '/spec');
 
-            #preg_match_all("/\s*#\s*(.*)\n\s*\-\s+(\"|')?(.*)\1/m", $spec, $matches, PREG_SET_ORDER);
             preg_match_all("/\s*#\s*(.*)\n\s*\-\s+(\")?([^'\"]+)\\2/m", $spec, $matches, PREG_SET_ORDER);
 
             foreach ($matches as $match) {

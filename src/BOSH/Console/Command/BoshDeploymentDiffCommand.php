@@ -10,41 +10,20 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshDiffCommand extends Command
+class BoshDeploymentDiffCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
-        $this
-            ->setName('bosh:diff')
+        parent::configure()
+            ->setName('bosh:deployment:diff')
             ->setDescription('Compare the current and proposed configuration for a BOSH deployment')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'director',
-                        InputArgument::REQUIRED,
-                        'Director name'
-                    ),
-                    new InputArgument(
-                        'deployment',
-                        InputArgument::REQUIRED,
-                        'Deployment name'
-                    ),
-                    new InputOption(
-                        'manifest',
-                        null,
-                        InputOption::VALUE_REQUIRED,
-                        'Manifest name',
-                        'manifest'
-                    ),
-                ]
-            )
             ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $directorDir = $input->getOption('basedir') . '/' . $input->getArgument('director');
-        $deploymentDir = $directorDir . '/' . $input->getArgument('deployment');
+        $directorDir = $input->getOption('basedir') . '/' . $input->getOption('director');
+        $deploymentDir = $directorDir . '/' . $input->getOption('deployment');
         $manifestFile = $deploymentDir . '/' . $input->getOption('manifest') . '.yml';
 
         $manpath = uniqid($directorDir . '/.compiled/bosh-manifest/');
@@ -56,8 +35,8 @@ class BoshDiffCommand extends Command
                 escapeshellarg($_SERVER['argv'][0]),
                 escapeshellarg($input->getOption('basedir')),
                 escapeshellarg($input->getOption('manifest')),
-                escapeshellarg($input->getArgument('director')),
-                escapeshellarg($input->getArgument('deployment')),
+                escapeshellarg($input->getOption('director')),
+                escapeshellarg($input->getOption('deployment')),
                 escapeshellarg($manpath)
             ),
             $return_var

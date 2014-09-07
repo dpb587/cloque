@@ -12,33 +12,31 @@ use Symfony\Component\Yaml\Yaml;
 use Elastica\Client;
 use Elastica\Request;
 
-class UtilityLogsearchShipperMetricsCheckCommand extends Command
+class UtilityLogsearchShipperMetricsCheckCommand extends AbstractCommand
 {
     protected function configure()
     {
         $this
             ->setName('utility:logsearch-shipper:metrics-check')
             ->setDescription('Super-generic alerting about metrics')
-            ->setDefinition([
-                new InputArgument(
-                    'elasticsearch',
-                    InputArgument::OPTIONAL,
-                    'Elasticsearch host to communicate with',
-                    'localhost:9200'
-                ),
-                new InputOption(
-                    'now',
-                    null,
-                    InputOption::VALUE_REQUIRED,
-                    'Evaluate from a given date/time instead of now'
-                ),
-                new InputOption(
-                    'now-prior',
-                    null,
-                    InputOption::VALUE_REQUIRED,
-                    'Include prior days in the index checks'
-                )
-            ])
+            ->addArgument(
+                'elasticsearch',
+                InputArgument::OPTIONAL,
+                'Elasticsearch host to communicate with',
+                'localhost:9200'
+            )
+            ->addOption(
+                'now',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Evaluate from a given date/time instead of now'
+            )
+            ->addOption(
+                'now-prior',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Include prior days in the index checks'
+            )
             ;
     }
 

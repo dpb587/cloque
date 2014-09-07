@@ -11,26 +11,17 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class InceptionProvisionBoshCommand extends Command
+class InceptionProvisionBoshCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('inception:provision-bosh')
             ->setDescription('Start an inception server')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'locality',
-                        InputArgument::REQUIRED,
-                        'Locality name'
-                    ),
-                    new InputArgument(
-                        'ami',
-                        InputArgument::REQUIRED,
-                        'BOSH AMI'
-                    ),
-                ]
+            ->addArgument(
+                'ami',
+                InputArgument::REQUIRED,
+                'BOSH AMI'
             )
             ;
     }
@@ -38,7 +29,7 @@ class InceptionProvisionBoshCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $network = Yaml::parse(file_get_contents($input->getOption('basedir') . '/network.yml'));
-        $networkLocal = $network['regions'][$input->getArgument('locality')];
+        $networkLocal = $network['regions'][$input->getOption('director')];
 
         $privateAws = Yaml::parse(file_get_contents($input->getOption('basedir') . '/global/private/aws.yml'));
 
@@ -106,7 +97,7 @@ class InceptionProvisionBoshCommand extends Command
                 escapeshellarg('ssh -i ' . escapeshellarg($input->getOption('basedir') . '/' . $privateAws['ssh_key_file'])),
                 $instance['PublicIpAddress'],
                 escapeshellarg('~/cloque/self/bosh-deployments.yml'),
-                escapeshellarg($input->getOption('basedir') . '/compiled/' . $input->getArgument('locality') . '/bosh-deployments.yml')
+                escapeshellarg($input->getOption('basedir') . '/compiled/' . $input->getOption('director') . '/bosh-deployments.yml')
             )
         );
 
@@ -114,7 +105,7 @@ class InceptionProvisionBoshCommand extends Command
         $output->write('> <comment>tagging</comment>...');
 
         # symfony yaml doesn't like ruby names
-        preg_match('/\s+:vm_cid:\s+(.*)/', file_get_contents($input->getOption('basedir') . '/compiled/' . $input->getArgument('locality') . '/bosh-deployments.yml'), $microbosh);
+        preg_match('/\s+:vm_cid:\s+(.*)/', file_get_contents($input->getOption('basedir') . '/compiled/' . $input->getOption('director') . '/bosh-deployments.yml'), $microbosh);
 
         $awsEc2->createTags([
             'Resources' => [
@@ -131,7 +122,7 @@ class InceptionProvisionBoshCommand extends Command
                 ],
                 [
                     'Key' => 'director',
-                    'Value' => $network['root']['name'] . '-' . $input->getArgument('locality'),
+                    'Value' => $network['root']['name'] . '-' . $input->getOption('director'),
                 ],
             ],
         ]);

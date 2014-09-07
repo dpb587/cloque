@@ -10,7 +10,7 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\TemplateEngine;
 use Symfony\Component\Yaml\Yaml;
 
-class InfrastructureStateCommand extends Command
+class InfrastructureStateCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
@@ -20,31 +20,10 @@ class InfrastructureStateCommand extends Command
                 'infra:state',
             ])
             ->setDescription('Dump the state')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'locality',
-                        InputArgument::REQUIRED,
-                        'Locality name'
-                    ),
-                    new InputArgument(
-                        'deployment',
-                        InputArgument::REQUIRED,
-                        'Deployment name'
-                    ),
-                    new InputArgument(
-                        'jq',
-                        InputArgument::OPTIONAL,
-                        'jq command'
-                    ),
-                    new InputOption(
-                        'component',
-                        null,
-                        InputOption::VALUE_REQUIRED,
-                        'Component name',
-                        null
-                    ),
-                ]
+            ->addArgument(
+                'jq',
+                InputArgument::OPTIONAL,
+                'jq command'
             )
             ;
     }
@@ -54,8 +33,8 @@ class InfrastructureStateCommand extends Command
         $destManifest = sprintf(
             '%s/compiled/%s/%s/infrastructure%s--state.json',
             $input->getOption('basedir'),
-            $input->getArgument('locality'),
-            $input->getArgument('deployment'),
+            $input->getOption('director'),
+            $input->getOption('deployment'),
             $input->getOption('component') ? ('-' . $input->getOption('component')) : ''
         );
 

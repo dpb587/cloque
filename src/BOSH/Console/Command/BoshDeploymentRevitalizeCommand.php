@@ -10,62 +10,30 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Yaml\Yaml;
 
-class UtilityRevitalizeCommand extends Command
+class BoshDeploymentRevitalizeCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
-        $this
-            ->setName('utility:revitalize')
+        parent::configure()
+            ->setName('bosh:deployment:revitalize')
             ->setDescription('Revitalize a deployment')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'director',
-                        InputArgument::REQUIRED,
-                        'Director name'
-                    ),
-                    new InputArgument(
-                        'deployment',
-                        InputArgument::REQUIRED,
-                        'Deployment name'
-                    ),
-                    new InputOption(
-                        'component',
-                        null,
-                        InputOption::VALUE_REQUIRED,
-                        'Component name',
-                        null
-                    ),
-                ]
-            )
             ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $baseargs = [
-            'locality' => $input->getArgument('director'),
-            'deployment' => $input->getArgument('deployment'),
-        ];
-
-        if ($input->getOption('component')) {
-            $baseargs['--component'] = $input->getOption('component');
-        }
-
-        $this->subrun(
-            'bosh:compile',
-            $baseargs,
+        $this->execCommand(
             $input,
-            $output
+            $output,
+            'bosh:deployment:compile'
         );
-
 
         $network = YAML::parse(file_get_contents($input->getOption('basedir') . '/network.yml'));
 
-        $mymanifest = Yaml::parse(file_get_contents($input->getOption('basedir') . '/compiled/' . $input->getArgument('director') . '/' . $input->getArgument('deployment') . '/bosh' . ($input->getOption('component') ? ('--' . $input->getOption('component')) : '') . '.yml'));
+        $mymanifest = Yaml::parse(file_get_contents($input->getOption('basedir') . '/compiled/' . $input->getOption('director') . '/' . $input->getOption('deployment') . '/bosh' . ($input->getOption('component') ? ('--' . $input->getOption('component')) : '') . '.yml'));
 
         $awsEc2 = \Aws\Ec2\Ec2Client::factory([
-            'region' => $network['regions'][$input->getArgument('director')]['region'],
+            'region' => $network['regions'][$input->getOption('director')]['region'],
         ]);
 
         foreach ($mymanifest['jobs'] as $job) {
@@ -178,7 +146,7 @@ class UtilityRevitalizeCommand extends Command
                             'SourceRegion' => $revitalizeTask['region'],
                             'SourceSnapshotId' => $latestSnapshot['SnapshotId'],
                             'Description' => $revitalizeTask['region'] . '/' . $latestSnapshot['SnapshotId'] . ': ' . $latestSnapshot['Description'],
-                            'DestinationRegion' => $network['regions'][$input->getArgument('director')]['region'],
+                            'DestinationRegion' => $network['regions'][$input->getOption('director')]['region'],
                         ]);
 
                         $output->writeln('      > <info>snapshot-id</info> -> ' . $copySnapshot['SnapshotId']);
@@ -329,7 +297,7 @@ class UtilityRevitalizeCommand extends Command
 
                     $output->writeln('    > <comment>mounting volume</comment>...');
 
-                    $this->sshexec($input, $output, $job, 'mkdir -p /tmp/xfer-xvdj && mount /dev/xvdj1 /tmp/xfer-xvdj');
+                    $this->sshexec($input, $output, $job, 'while [ ! -e /dev/xvdj1 ] ; do sleep 1 ; done ; mkdir -p /tmp/xfer-xvdj && mount /dev/xvdj1 /tmp/xfer-xvdj');
 
 
                     $output->writeln('    > <comment>transferring data</comment>...');
@@ -430,31 +398,6 @@ class UtilityRevitalizeCommand extends Command
             throw new \RuntimeException($exec . ' --> exit ' . $return_var);
         }
 
-        passthru($exec = 'ssh -i ' . $input->getOption('basedir') . '/' . $aws['ssh_key_file'] . ' -q vcap@' . $job['networks'][0]['static_ips'][0] . ' ' . escapeshellarg('/bin/bash -c ' . escapeshellarg('echo c1oudc0w | sudo -p "" -l -S -- /bin/bash -c ' . escapeshellarg('set -e ; chmod +x /tmp/' . basename($file) . ' ; /tmp/' . basename($file) . ' ; rm /tmp/' . basename($file)))), $return_var);
-
-        if ($return_var) {
-            throw new \RuntimeException($exec . ' --> exit ' . $return_var);
-        }
-    }
-
-    protected function subrun($name, array $arguments, InputInterface $input, OutputInterface $output)
-    {
-        if ($input->getOption('basedir')) {
-            $arguments['--basedir'] = $input->getOption('basedir');
-        }
-
-        $arguments['command'] = $name;
-
-        $subinput = new ArrayInput($arguments);
-        $subinput->setInteractive($input->isInteractive());
-
-        $return = $this->getApplication()->find($name)->run(
-            $subinput,
-            $output
-        );
-
-        if ($return) {
-            throw new \RuntimeException(sprintf('%s exited with %s', $name, $return));
-        }
+        $this->sshexec($input, $output, $job, 'chmod +x /tmp/' . basename($file) . ' ; /tmp/' . basename($file) . ' ; rm /tmp/' . basename($file));
     }
 }

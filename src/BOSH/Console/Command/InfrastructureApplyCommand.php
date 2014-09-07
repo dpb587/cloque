@@ -10,43 +10,21 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class InfrastructureApplyCommand extends Command
+class InfrastructureApplyCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('infrastructure:apply')
             ->setAliases([
                 'infra:apply',
             ])
             ->setDescription('Deploy the httpassetcache deployment')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'locality',
-                        InputArgument::REQUIRED,
-                        'Locality name'
-                    ),
-                    new InputArgument(
-                        'deployment',
-                        InputArgument::REQUIRED,
-                        'Deployment name'
-                    ),
-                    new InputOption(
-                        'component',
-                        null,
-                        InputOption::VALUE_REQUIRED,
-                        'Component name',
-                        null
-                    ),
-                    new InputOption(
-                        'aws-cloudformation',
-                        null,
-                        InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-                        'Additional CloudFormation arguments',
-                        null
-                    ),
-                ]
+            ->addOption(
+                'aws-cloudformation',
+                null,
+                InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
+                'Additional CloudFormation arguments'
             )
             ;
     }
@@ -56,8 +34,8 @@ class InfrastructureApplyCommand extends Command
         $destManifest = sprintf(
             '%s/compiled/%s/%s/infrastructure%s.json',
             $input->getOption('basedir'),
-            $input->getArgument('locality'),
-            $input->getArgument('deployment'),
+            $input->getOption('director'),
+            $input->getOption('deployment'),
             $input->getOption('component') ? ('-' . $input->getOption('component')) : ''
         );
 
@@ -65,14 +43,14 @@ class InfrastructureApplyCommand extends Command
 
         $stackName = sprintf(
             '%s--%s%s',
-            $network['root']['name'] . '-' . $input->getArgument('locality'),
-            $input->getArgument('deployment'),
+            $network['root']['name'] . '-' . $input->getOption('director'),
+            $input->getOption('deployment'),
             $input->getOption('component') ? ('--' . $input->getOption('component')) : ''
         );
 
         // hack
         $stackName = preg_replace('#^prod-abraxas-global(\-\-.*)$#', 'global$1', $stackName);
-        $region = $network['regions'][$input->getArgument('locality')]['region'];
+        $region = $network['regions'][$input->getOption('director')]['region'];
 
         $awsCloudFormation = \Aws\CloudFormation\CloudFormationClient::factory([
             'region' => $region,
@@ -112,11 +90,11 @@ class InfrastructureApplyCommand extends Command
             $apiArgs['Tags'] = [
                 [
                     'Key' => 'deployment',
-                    'Value' => 'infra/' . $input->getArgument('deployment') . ($input->getOption('component') ? ('/' . $input->getOption('component')) : ''),
+                    'Value' => 'infra/' . $input->getOption('deployment') . ($input->getOption('component') ? ('/' . $input->getOption('component')) : ''),
                 ],
                 [
                     'Key' => 'director',
-                    'Value' => $input->getArgument('locality') . '.' . $network['root']['name'],
+                    'Value' => $input->getOption('director') . '.' . $network['root']['name'],
                 ],
             ];
         }

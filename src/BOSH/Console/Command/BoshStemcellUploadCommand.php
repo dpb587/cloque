@@ -10,60 +10,30 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshStemcellUploadCommand extends Command
+class BoshStemcellUploadCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('bosh:stemcell:upload')
             ->setDescription('Upload a stemcell to the BOSH director')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'director',
-                        InputArgument::REQUIRED,
-                        'Director name'
-                    ),
-                    new InputArgument(
-                        'stemcell',
-                        InputArgument::REQUIRED,
-                        'Stemcell path'
-                    ),
-                ]
+            ->addArgument(
+                'stemcell',
+                InputArgument::REQUIRED,
+                'Stemcell path'
             )
             ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $directorDir = $input->getOption('basedir') . '/' . $input->getArgument('director');
-
-        $descriptorspec = array(
-           0 => STDIN,
-           1 => STDOUT,
-           2 => STDERR,
+        $this->execBosh(
+            $input,
+            $output,
+            [
+                'upload', 'stemcell',
+                $input->getArgument('stemcell'),
+            ]
         );
-
-        $ph = proc_open(
-            sprintf(
-                'bosh %s %s -c %s upload stemcell %s',
-                $output->isDecorated() ? '--color' : '--no-color',
-                $input->isInteractive() ? '' : '--non-interactive',
-                escapeshellarg($directorDir . '/.bosh_config'),
-                escapeshellarg($input->getArgument('stemcell'))
-            ),
-            $descriptorspec,
-            $pipes,
-            getcwd(),
-            null
-        );
-
-        $status = proc_get_status($ph);
-
-        do {
-            pcntl_waitpid($status['pid'], $pidstatus);
-        } while (!pcntl_wifexited($pidstatus));
-
-        return pcntl_wexitstatus($pidstatus);
     }
 }

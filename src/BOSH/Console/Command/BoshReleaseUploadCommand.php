@@ -10,60 +10,30 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshReleaseUploadCommand extends Command
+class BoshReleaseUploadCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('bosh:release:upload')
             ->setDescription('Upload a release to the BOSH director')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'director',
-                        InputArgument::REQUIRED,
-                        'Director name'
-                    ),
-                    new InputArgument(
-                        'release',
-                        InputArgument::OPTIONAL,
-                        'Deployment name'
-                    ),
-                ]
+            ->addArgument(
+                'release',
+                InputArgument::OPTIONAL,
+                'Deployment name'
             )
             ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $directorDir = $input->getOption('basedir') . '/' . $input->getArgument('director');
-
-        $descriptorspec = array(
-           0 => STDIN,
-           1 => STDOUT,
-           2 => STDERR,
+        $this->execBosh(
+            $input,
+            $output,
+            [
+                'upload', 'release',
+                $input->getArgument('release') ? $input->getArgument('release') : ''
+            ]
         );
-
-        $ph = proc_open(
-            sprintf(
-                'bosh %s %s -c %s upload release %s',
-                $output->isDecorated() ? '--color' : '--no-color',
-                $input->isInteractive() ? '' : '--non-interactive',
-                escapeshellarg($directorDir . '/.bosh_config'),
-                $input->getArgument('release') ? escapeshellarg($input->getArgument('release')) : ''
-            ),
-            $descriptorspec,
-            $pipes,
-            getcwd(),
-            null
-        );
-
-        $status = proc_get_status($ph);
-
-        do {
-            pcntl_waitpid($status['pid'], $pidstatus);
-        } while (!pcntl_wifexited($pidstatus));
-
-        return pcntl_wexitstatus($pidstatus);
     }
 }

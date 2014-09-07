@@ -10,37 +10,16 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class InfrastructureDestroyCommand extends Command
+class InfrastructureDestroyCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('infrastructure:destroy')
             ->setAliases([
                 'infra:destroy',
             ])
             ->setDescription('Deploy the httpassetcache deployment')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'locality',
-                        InputArgument::REQUIRED,
-                        'Locality name'
-                    ),
-                    new InputArgument(
-                        'deployment',
-                        InputArgument::REQUIRED,
-                        'Deployment name'
-                    ),
-                    new InputOption(
-                        'component',
-                        null,
-                        InputOption::VALUE_REQUIRED,
-                        'Component name',
-                        null
-                    )
-                ]
-            )
             ;
     }
 
@@ -50,15 +29,15 @@ class InfrastructureDestroyCommand extends Command
 
         $stackName = sprintf(
             '%s--%s%s',
-            ($input->getOption('basename') ? ($input->getOption('basename') . '-') : '') . $input->getArgument('locality'),
-            $input->getArgument('deployment'),
+            ($input->getOption('basename') ? ($input->getOption('basename') . '-') : '') . $input->getOption('director'),
+            $input->getOption('deployment'),
             $input->getOption('component') ? ('--' . $input->getOption('component')) : ''
         );
 
         // hack
         $stackName = preg_replace('#^prod-abraxas-global(\-\-.*)$#', 'global$1', $stackName);
 
-        $region = $network['regions'][($input->getOption('basename') ? ($input->getOption('basename') . '-') : '') . $input->getArgument('locality')]['region'];
+        $region = $network['regions'][($input->getOption('basename') ? ($input->getOption('basename') . '-') : '') . $input->getOption('director')]['region'];
 
         $awsCloudFormation = \Aws\CloudFormation\CloudFormationClient::factory([
             'region' => $region,

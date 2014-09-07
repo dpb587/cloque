@@ -10,40 +10,31 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class InceptionStartCommand extends Command
+class InceptionStartCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('inception:start')
             ->setDescription('Start an inception server')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'locality',
-                        InputArgument::REQUIRED,
-                        'Locality name'
-                    ),
-                    new InputOption(
-                        'subnet',
-                        null,
-                        InputOption::VALUE_REQUIRED,
-                        'Subnet'
-                    ),
-                    new InputOption(
-                        'instance-type',
-                        null,
-                        InputOption::VALUE_REQUIRED,
-                        'Instance type',
-                        't2.micro'
-                    ),
-                    new InputOption(
-                        'security-group',
-                        null,
-                        InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
-                        'Security groups'
-                    ),
-                ]
+            ->addOption(
+                'subnet',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Subnet'
+            )
+            ->addOption(
+                'instance-type',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Instance type',
+                't2.micro'
+            )
+            ->addOption(
+                'security-group',
+                null,
+                InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+                'Security groups'
             )
             ;
     }
@@ -51,7 +42,7 @@ class InceptionStartCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $network = Yaml::parse(file_get_contents($input->getOption('basedir') . '/network.yml'));
-        $networkLocal = $network['regions'][$input->getArgument('locality')];
+        $networkLocal = $network['regions'][$input->getOption('director')];
 
         $privateAws = Yaml::parse(file_get_contents($input->getOption('basedir') . '/global/private/aws.yml'));
 
@@ -114,7 +105,7 @@ class InceptionStartCommand extends Command
         $addTags = [];
 
         $expectedTags = [
-            'director' => $network['root']['name'] . '-' . $input->getArgument('locality'),
+            'director' => $network['root']['name'] . '-' . $input->getOption('director'),
             'deployment' => 'cloque/inception',
             'Name' => 'main',
         ];
@@ -238,7 +229,7 @@ class InceptionStartCommand extends Command
             sprintf(
                 'rsync -auze %s --progress %s ubuntu@%s:%s',
                 escapeshellarg('ssh -i ' . escapeshellarg($input->getOption('basedir') . '/' . $privateAws['ssh_key_file'])),
-                escapeshellarg($input->getOption('basedir') . '/compiled/' . $input->getArgument('locality') . '/.'),
+                escapeshellarg($input->getOption('basedir') . '/compiled/' . $input->getOption('director') . '/.'),
                 $instance['PublicIpAddress'],
                 escapeshellarg('~/cloque/self/.')
             )

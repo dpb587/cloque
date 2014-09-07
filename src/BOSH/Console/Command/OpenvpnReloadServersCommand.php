@@ -11,7 +11,7 @@ use Aws\Ec2\Ec2Client;
 use Symfony\Component\Yaml\Yaml;
 use BOSH\Deployment\TemplateEngine;
 
-class OpenvpnReloadServersCommand extends Command
+class OpenvpnReloadServersCommand extends AbstractCommand
 {
     protected function configure()
     {

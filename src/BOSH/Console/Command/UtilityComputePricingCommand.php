@@ -10,7 +10,7 @@ use Symfony\Component\Console\Command\Command;
 use Aws\Ec2\Ec2Client;
 use Symfony\Component\Yaml\Yaml;
 
-class UtilityComputePricingCommand extends Command
+class UtilityComputePricingCommand extends AbstractCommand
 {
     protected $spotPriceCache = [];
 

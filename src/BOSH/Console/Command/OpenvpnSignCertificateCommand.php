@@ -11,21 +11,17 @@ use Aws\Ec2\Ec2Client;
 use Symfony\Component\Yaml\Yaml;
 use BOSH\Deployment\TemplateEngine;
 
-class OpenvpnSignCertificateCommand extends Command
+class OpenvpnSignCertificateCommand extends AbstractCommand
 {
     protected function configure()
     {
         $this
             ->setName('openvpn:sign-certificate')
             ->setDescription('Sign a certificate for client usage')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'csr',
-                        InputArgument::REQUIRED,
-                        'CSR path'
-                    ),
-                ]
+            ->addArgument(
+                'csr',
+                InputArgument::REQUIRED,
+                'CSR path'
             )
             ;
     }

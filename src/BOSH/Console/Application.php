@@ -42,29 +42,4 @@ class Application extends BaseApplication
 
         return $commands;
     }
-
-    protected function configureIO(InputInterface $input, OutputInterface $output)
-    {
-        parent::configureIO($input, $output);
-
-        // save this for when we need to build an API client
-        $this->input = $input;
-        $this->output = $output;
-    }
-
-    protected function getDefaultInputDefinition()
-    {
-        $definition = parent::getDefaultInputDefinition();
-
-        $definition->addOption(
-            new InputOption(
-                'basedir',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'Base configuration directory'
-            )
-        );
-
-        return $definition;
-    }
 }

@@ -11,43 +11,21 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class InfrastructureGoCommand extends Command
+class InfrastructureGoCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('infrastructure:go')
             ->setAliases([
                 'infra:go',
             ])
             ->setDescription('Deploy the httpassetcache deployment')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'locality',
-                        InputArgument::REQUIRED,
-                        'Locality name'
-                    ),
-                    new InputArgument(
-                        'deployment',
-                        InputArgument::REQUIRED,
-                        'Deployment name'
-                    ),
-                    new InputOption(
-                        'component',
-                        null,
-                        InputOption::VALUE_REQUIRED,
-                        'Component name',
-                        null
-                    ),
-                    new InputOption(
-                        'aws-cloudformation',
-                        null,
-                        InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-                        'Additional CloudFormation arguments',
-                        null
-                    ),
-                ]
+            ->addOption(
+                'aws-cloudformation',
+                null,
+                InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
+                'Additional CloudFormation arguments'
             )
             ;
     }
@@ -55,8 +33,8 @@ class InfrastructureGoCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $baseargs = [
-            'locality' => $input->getArgument('locality'),
-            'deployment' => $input->getArgument('deployment'),
+            'director' => $input->getOption('director'),
+            'deployment' => $input->getOption('deployment'),
         ];
 
         if ($input->getOption('component')) {

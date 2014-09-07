@@ -10,50 +10,24 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshSnapshotCleanupCommand extends Command
+class BoshSnapshotCleanupCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('bosh:snapshot:cleanup')
             ->setDescription('Cleanup snapshots according to retention policies')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'director',
-                        InputArgument::REQUIRED,
-                        'Director name'
-                    ),
-                    new InputArgument(
-                        'deployment',
-                        InputArgument::REQUIRED,
-                        'Deployment name'
-                    ),
-                    new InputArgument(
-                        'job',
-                        InputArgument::OPTIONAL,
-                        'Job'
-                    ),
-                    new InputArgument(
-                        'index',
-                        InputArgument::OPTIONAL,
-                        'Index'
-                    ),
-                    new InputOption(
-                        'component',
-                        null,
-                        InputOption::VALUE_REQUIRED,
-                        'Component name',
-                        null
-                    ),
-                    new InputOption(
-                        'dry-run',
-                        null,
-                        InputOption::VALUE_NONE,
-                        'Do not perform deletions',
-                        null
-                    ),
-                ]
+            ->addArgument(
+                'jobid',
+                InputArgument::OPTIONAL,
+                'Job/index to connect'
+            )
+            ->addOption(
+                'dry-run',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not perform deletions',
+                null
             )
             ;
     }
@@ -63,16 +37,16 @@ class BoshSnapshotCleanupCommand extends Command
         $destManifest = sprintf(
             '%s/compiled/%s/%s/bosh%s.yml',
             $input->getOption('basedir'),
-            $input->getArgument('director'),
-            $input->getArgument('deployment'),
+            $input->getOption('director'),
+            $input->getOption('deployment'),
             $input->getOption('component') ? ('-' . $input->getOption('component')) : ''
         );
 
-        $job = explode('/', $input->getArgument('job'), 2);
-        $index = $input->getArgument('index') ?: (isset($job[1]) ? $job[1] : null);
-        $job = isset($job[0]) ? $job[0] : null;
+        $jobid = explode('/', $input->getArgument('jobid'), 2);
+        $index = isset($jobid[1]) ? $jobid[1] : null;
+        $job = isset($jobid[0]) ? $jobid[0] : null;
 
-        $directorDir = $input->getOption('basedir') . '/' . $input->getArgument('director');
+        $directorDir = $input->getOption('basedir') . '/' . $input->getOption('director');
 
         exec(
             sprintf(
@@ -119,8 +93,8 @@ class BoshSnapshotCleanupCommand extends Command
         $checker = false;
 
         foreach ([
-            $input->getArgument('director') . '/' . $input->getArgument('deployment') . '/cloque/bosh-snapshot-cleanup.php',
-            $input->getArgument('director') . '/common/cloque/bosh-snapshot-cleanup.php',
+            $input->getOption('director') . '/' . $input->getOption('deployment') . '/cloque/bosh-snapshot-cleanup.php',
+            $input->getOption('director') . '/common/cloque/bosh-snapshot-cleanup.php',
             'common/cloque/bosh-snapshot-cleanup.php',
         ] as $checkerPath) {
             $checkerPath = $input->getOption('basedir') . '/' . $checkerPath;

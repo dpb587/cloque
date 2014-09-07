@@ -10,34 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\TemplateEngine;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshCompileCommand extends Command
+class BoshDeploymentCompileCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
-        $this
-            ->setName('bosh:compile')
+        parent::configure()
+            ->setName('bosh:deployment:compile')
             ->setDescription('Recompile the configuration for a BOSH deployment')
-            ->setDefinition(
-                [
-                    new InputArgument(
-                        'locality',
-                        InputArgument::REQUIRED,
-                        'Locality name'
-                    ),
-                    new InputArgument(
-                        'deployment',
-                        InputArgument::REQUIRED,
-                        'Deployment name'
-                    ),
-                    new InputOption(
-                        'component',
-                        null,
-                        InputOption::VALUE_REQUIRED,
-                        'Component name',
-                        null
-                    ),
-                ]
-            )
             ;
     }
 
@@ -46,16 +25,16 @@ class BoshCompileCommand extends Command
         $sourceManifest = sprintf(
             '%s/%s/%s/bosh%s.yml',
             $input->getOption('basedir'),
-            $input->getArgument('locality'),
-            $input->getArgument('deployment'),
+            $input->getOption('director'),
+            $input->getOption('deployment'),
             $input->getOption('component') ? ('-' . $input->getOption('component')) : ''
         );
 
         $destManifest = sprintf(
             '%s/compiled/%s/%s/bosh%s.yml',
             $input->getOption('basedir'),
-            $input->getArgument('locality'),
-            $input->getArgument('deployment'),
+            $input->getOption('director'),
+            $input->getOption('deployment'),
             $input->getOption('component') ? ('-' . $input->getOption('component')) : ''
         );
 
@@ -67,8 +46,8 @@ class BoshCompileCommand extends Command
 
         $engine = new TemplateEngine(
             $input->getOption('basedir'),
-            $input->getArgument('locality'),
-            $input->getArgument('deployment')
+            $input->getOption('director'),
+            $input->getOption('deployment')
         );
 
         $result = file_get_contents($sourceManifest);
