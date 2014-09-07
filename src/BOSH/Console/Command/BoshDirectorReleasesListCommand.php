@@ -10,26 +10,18 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshDeploymentDestroyCommand extends AbstractDirectorDeploymentCommand
+class BoshDirectorReleasesListCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('bosh:deployment:destroy')
-            ->setDescription('Completely destroy a BOSH deployment')
+            ->setName('boshdirector:releases')
+            ->setDescription('List all releases in the director')
             ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->execBoshDeployment(
-            $input,
-            $output,
-            [
-                'delete',
-                'deployment',
-                $input->getOption('deployment') . ($input->getOption('component') ? ('-' . $input->getOption('component')) : ''),
-            ]
-        );
+        $this->execBosh($input, $output, 'releases');
     }
 }

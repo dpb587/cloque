@@ -10,13 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshDeploymentSshCommand extends AbstractDirectorDeploymentCommand
+class BoshSshCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('bosh:deployment:ssh')
-            ->setDescription('Connect to a job in a BOSH deployment')
+            ->setName('bosh:ssh')
+            ->setDescription('Connect to a job in the deployment')
             ->addArgument(
                 'jobid',
                 InputArgument::OPTIONAL,

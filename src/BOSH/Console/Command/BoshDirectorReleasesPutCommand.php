@@ -10,13 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshReleaseUploadCommand extends AbstractDirectorCommand
+class BoshDirectorReleasesPutCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('bosh:release:upload')
-            ->setDescription('Upload a release to the BOSH director')
+            ->setName('boshdirector:releases')
+            ->setDescription('Upload a release to the director')
             ->addArgument(
                 'release',
                 InputArgument::OPTIONAL,

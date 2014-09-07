@@ -10,16 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class InfrastructureDestroyCommand extends AbstractDirectorDeploymentCommand
+class InfraDeleteCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('infrastructure:destroy')
-            ->setAliases([
-                'infra:destroy',
-            ])
-            ->setDescription('Deploy the httpassetcache deployment')
+            ->setName('infra:delete')
+            ->setDescription('Completely destroy the infrastructure')
             ;
     }
 

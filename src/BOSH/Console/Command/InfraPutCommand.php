@@ -10,16 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class InfrastructureApplyCommand extends AbstractDirectorDeploymentCommand
+class InfraPutCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('infrastructure:apply')
-            ->setAliases([
-                'infra:apply',
-            ])
-            ->setDescription('Deploy the httpassetcache deployment')
+            ->setName('infra:put')
+            ->setDescription('Apply the latest configuration to the infrastructure')
             ->addOption(
                 'aws-cloudformation',
                 null,
@@ -31,6 +28,12 @@ class InfrastructureApplyCommand extends AbstractDirectorDeploymentCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->execCommand(
+            $input,
+            $output,
+            'infra:compile'
+        );
+
         $destManifest = sprintf(
             '%s/compiled/%s/%s/infrastructure%s.json',
             $input->getOption('basedir'),
@@ -153,5 +156,11 @@ class InfrastructureApplyCommand extends AbstractDirectorDeploymentCommand
 
             sleep(5);
         }
+
+        $this->execCommand(
+            $input,
+            $output,
+            'infra:reload-state'
+        );
     }
 }

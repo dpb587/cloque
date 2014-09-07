@@ -10,18 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshStemcellUploadCommand extends AbstractDirectorCommand
+class BoshCckCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('bosh:stemcell:upload')
-            ->setDescription('Upload a stemcell to the BOSH director')
-            ->addArgument(
-                'stemcell',
-                InputArgument::REQUIRED,
-                'Stemcell path'
-            )
+            ->setName('bosh:cck')
+            ->setDescription('Run the cloudcheck (and optional repair) tasks against the deployment')
             ;
     }
 
@@ -31,8 +26,8 @@ class BoshStemcellUploadCommand extends AbstractDirectorCommand
             $input,
             $output,
             [
-                'upload', 'stemcell',
-                $input->getArgument('stemcell'),
+                'cck',
+                $input->getOption('deployment') . ($input->getOption('component') ? ('-' . $input->getOption('component')) : ''),
             ]
         );
     }

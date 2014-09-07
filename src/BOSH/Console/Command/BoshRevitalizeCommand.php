@@ -10,13 +10,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshDeploymentRevitalizeCommand extends AbstractDirectorDeploymentCommand
+class BoshRevitalizeCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('bosh:deployment:revitalize')
-            ->setDescription('Revitalize a deployment')
+            ->setName('bosh:revitalize')
+            ->setDescription('Revitalize the deployment')
             ;
     }
 
@@ -25,7 +25,7 @@ class BoshDeploymentRevitalizeCommand extends AbstractDirectorDeploymentCommand
         $this->execCommand(
             $input,
             $output,
-            'bosh:deployment:compile'
+            'bosh:recompile'
         );
 
         $network = YAML::parse(file_get_contents($input->getOption('basedir') . '/network.yml'));

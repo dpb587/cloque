@@ -10,13 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshSnapshotCreateCommand extends AbstractDirectorDeploymentCommand
+class BoshSnapshotCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('bosh:snapshot:create')
-            ->setDescription('Create a new snapshot')
+            ->setName('bosh:snapshot')
+            ->setDescription('Create a new snapshot for the deployment')
             ->addArgument(
                 'jobid',
                 InputArgument::OPTIONAL,

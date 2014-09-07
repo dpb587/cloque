@@ -10,13 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshSnapshotCleanupSelfCommand extends AbstractDirectorCommand
+class BoshDirectorSnapshotsCleanupSelfCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('bosh:snapshot:cleanup-self')
-            ->setDescription('Cleanup director self snapshots')
+            ->setName('boshdirector:snapshots:cleanup-self')
+            ->setDescription('Cleanup snapshots created for/by the director')
             ->addArgument(
                 'interval',
                 InputArgument::REQUIRED,

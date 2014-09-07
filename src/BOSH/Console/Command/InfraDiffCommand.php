@@ -10,15 +10,12 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\TemplateEngine;
 use Symfony\Component\Yaml\Yaml;
 
-class InfrastructureDiffCommand extends AbstractDirectorDeploymentCommand
+class InfraDiffCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('infrastructure:diff')
-            ->setAliases([
-                'infra:diff',
-            ])
+            ->setName('infra:diff')
             ->setDescription('Compare the running configuration with the local configuration')
             ;
     }

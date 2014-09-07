@@ -10,13 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\TemplateEngine;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshDeploymentCompileCommand extends AbstractDirectorDeploymentCommand
+class BoshRecompileCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('bosh:deployment:compile')
-            ->setDescription('Recompile the configuration for a BOSH deployment')
+            ->setName('bosh:recompile')
+            ->setDescription('Locally recompile the configuration for the deployment')
             ;
     }
 

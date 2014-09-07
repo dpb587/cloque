@@ -10,12 +10,12 @@ use Symfony\Component\Console\Command\Command;
 use Aws\Ec2\Ec2Client;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshUtilityPackageDockerBuildCommand extends AbstractCommand
+class BoshUtilPackageDockerBuildCommand extends AbstractCommand
 {
     protected function configure()
     {
         $this
-            ->setName('bosh:utility:package-docker-build')
+            ->setName('boshutil:package-docker-build')
             ->setDescription('Debug the build process of a package in a Docker container')
             ->addArgument(
                 'package',

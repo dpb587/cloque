@@ -10,12 +10,12 @@ use Symfony\Component\Console\Command\Command;
 use Aws\Ec2\Ec2Client;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshUtilityPackageDownloadsCommand extends AbstractCommand
+class BoshUtilPackageDownloadsCommand extends AbstractCommand
 {
     protected function configure()
     {
         $this
-            ->setName('bosh:utility:package-downloads')
+            ->setName('boshutil:package-downloads')
             ->setDescription('Dump commands to download packaging spec files')
             ->addArgument(
                 'file',

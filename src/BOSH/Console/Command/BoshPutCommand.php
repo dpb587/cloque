@@ -10,18 +10,28 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshDeploymentApplyCommand extends AbstractDirectorDeploymentCommand
+class BoshPutCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('bosh:deployment:apply')
-            ->setDescription('Apply the latest configuration to a BOSH deployment')
+            ->setName('bosh:put')
+            ->setDescription('Apply the latest configuration to the deployment')
             ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->execBoshDeployment($input, $output, 'deploy');
+        $this->execCommand(
+            $input,
+            $output,
+            'bosh:recompile'
+        );
+
+        $this->execBoshDeployment(
+            $input,
+            $output,
+            'deploy'
+        );
     }
 }

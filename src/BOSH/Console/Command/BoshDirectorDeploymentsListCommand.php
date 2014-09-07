@@ -10,13 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshDeploymentsListCommand extends AbstractDirectorCommand
+class BoshDirectorDeploymentsListCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('bosh:deployments:list')
-            ->setDescription('List all deployments')
+            ->setName('boshdirector:deployments')
+            ->setDescription('List all deployments in the director')
             ->addOption(
                 'format',
                 null,

@@ -10,16 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\TemplateEngine;
 use Symfony\Component\Yaml\Yaml;
 
-class InfrastructureCompileCommand extends AbstractDirectorDeploymentCommand
+class InfraRecompileCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('infrastructure:compile')
-            ->setAliases([
-                'infra:compile',
-            ])
-            ->setDescription('Deploy the httpassetcache deployment')
+            ->setName('infra:recompile')
+            ->setDescription('Locally recompile the configuration for the infrastructure')
             ;
     }
 

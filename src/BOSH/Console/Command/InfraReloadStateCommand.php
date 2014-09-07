@@ -10,15 +10,12 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class InfrastructureReloadStateCommand extends AbstractDirectorDeploymentCommand
+class InfraReloadStateCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('infrastructure:reload-state')
-            ->setAliases([
-                'infra:reload-state',
-            ])
+            ->setName('infra:reload-state')
             ->setDescription('Dump the current infrastructure state')
             ;
     }

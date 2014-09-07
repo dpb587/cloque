@@ -10,12 +10,12 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshSnapshotCleanupCommand extends AbstractDirectorDeploymentCommand
+class BoshDirectorSnapshotsCleanupCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('bosh:snapshot:cleanup')
+            ->setName('boshdirector:snapshots:cleanup')
             ->setDescription('Cleanup snapshots according to retention policies')
             ->addArgument(
                 'jobid',
