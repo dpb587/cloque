@@ -15,7 +15,7 @@ class OpenvpnReloadServersCommand extends AbstractCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('openvpn:reload-servers')
             ->setDescription('Update servers with latest configuration')
             ;

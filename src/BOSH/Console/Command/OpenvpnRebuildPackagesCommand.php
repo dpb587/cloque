@@ -15,7 +15,7 @@ class OpenvpnRebuildPackagesCommand extends AbstractCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('openvpn:rebuild-packages')
             ->setDescription('Rebuild and upload OpenVPN gateway packages')
             ;

@@ -10,7 +10,7 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshDirectorStemcellsUploadCommand extends AbstractDirectorCommand
+class BoshDirectorStemcellsPutCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {

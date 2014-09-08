@@ -32,12 +32,12 @@ across all regions.
 
 Deploy those CloudFormation template.
 
-    $ cloque infrastructure:go global core --aws-cloudformation 'Capabilities=["CAPABILITY_IAM"]'
+    $ cloque infra:put global core --aws-cloudformation 'Capabilities=["CAPABILITY_IAM"]'
 
 Moar... deploy the region, bosh director, and target bosh...
 
-    $ cloque infrastructure:go aws-usw2 core
-    $ cloque infrastructure:go aws-usw2 bosh
+    $ cloque infra:put aws-usw2 core
+    $ cloque infra:put aws-usw2 bosh
     $ cloque bosh:compile aws-usw2 bosh
     $ cloque inception:start aws-usw2 \
       --subnet $(cloque infra:dump-state aws-usw2 core '.SubnetZ0PublicId') \

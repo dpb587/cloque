@@ -31,7 +31,7 @@ class InfraPutCommand extends AbstractDirectorDeploymentCommand
         $this->execCommand(
             $input,
             $output,
-            'infra:compile'
+            'infra:recompile'
         );
 
         $destManifest = sprintf(

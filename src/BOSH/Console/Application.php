@@ -2,6 +2,8 @@
 
 namespace BOSH\Console;
 
+use Monolog\Logger;
+use Symfony\Bridge\Monolog\Handler\ConsoleHandler;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Console\Application as BaseApplication;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,11 +16,24 @@ use RuntimeException;
 class Application extends BaseApplication
 {
     protected $client;
-    protected $input;
+    protected $logger;
 
     public function __construct()
     {
         parent::__construct('bosh', Manifest::getVersion());
+    }
+
+    protected function configureIO(InputInterface $input, OutputInterface $output)
+    {
+        parent::configureIO($input, $output);
+
+        $this->logger = new Logger('cloque');
+        $this->logger->pushHandler(new ConsoleHandler($output));
+    }
+
+    public function getLogger()
+    {
+        return $this->logger;
     }
 
     protected function getDefaultCommands()

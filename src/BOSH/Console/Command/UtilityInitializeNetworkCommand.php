@@ -14,7 +14,7 @@ class UtilityInitializeNetworkCommand extends AbstractCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('utility:initialize-network')
             ->setDescription('Initialize a new network')
             ;
@@ -300,9 +300,9 @@ class UtilityInitializeNetworkCommand extends AbstractCommand
         if (file_exists($input->getOption('basedir') . '/global/openvpn/easyrsa/pki/crl.pem')) {
             $output->writeln('exists');
         } else {
-            passthru('cd ' . escapeshellarg($input->getOption('basedir') . '/global/openvpn/easyrsa') . ' && ./easyrsa --vars=pki.vars gen-crl > /dev/null 2>&1');
+            $output->writeln('creating...');
 
-            $output->writeln('created');
+            passthru('cd ' . escapeshellarg($input->getOption('basedir') . '/global/openvpn/easyrsa') . ' && ./easyrsa --vars=pki.vars gen-crl > /dev/null 2>&1');
         }
 
 
@@ -397,5 +397,11 @@ class UtilityInitializeNetworkCommand extends AbstractCommand
 
             $output->writeln('created');
         }
+
+        $this->execCommand(
+            $input,
+            $output,
+            'openvpn:rebuild-packages'
+        );
     }
 }

@@ -35,6 +35,10 @@ abstract class AbstractDirectorCommand extends AbstractCommand
         );
 
         foreach ((array) $args as $arg) {
+            if (null === $arg) {
+                continue;
+            }
+
             $exec .= ' ' . escapeshellarg($arg);
         }
 

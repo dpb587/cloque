@@ -15,7 +15,7 @@ class OpenvpnSignCertificateCommand extends AbstractCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('openvpn:sign-certificate')
             ->setDescription('Sign a certificate for client usage')
             ->addArgument(
@@ -40,10 +40,6 @@ class OpenvpnSignCertificateCommand extends AbstractCommand
         file_put_contents($input->getOption('basedir') . '/global/openvpn/easyrsa/pki/reqs/' . $csrDetails['CN'] . '.req', $csr);
 
         passthru('cd ' . escapeshellarg($input->getOption('basedir') . '/global/openvpn/easyrsa') . ' && ./easyrsa --vars=pki.vars sign client ' . escapeshellarg($csrDetails['CN']));//, $return_var);
-
-        if ($return_var) {
-            throw new \RuntimeException('Exit code was ' . $return_var);
-        }
 
         $output->writeln('<info>' . file_get_contents($input->getOption('basedir') . '/global/openvpn/easyrsa/pki/issued/' . $csrDetails['CN'] . '.crt') . '</info>');
     }

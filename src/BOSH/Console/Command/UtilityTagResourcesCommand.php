@@ -14,7 +14,7 @@ class UtilityTagResourcesCommand extends AbstractCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('utility:tag-resources')
             ->setDescription('Tag volumes attached to instances')
             ;

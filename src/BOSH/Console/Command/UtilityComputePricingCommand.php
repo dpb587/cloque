@@ -16,7 +16,7 @@ class UtilityComputePricingCommand extends AbstractCommand
 
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('utility:compute-pricing')
             ->setDescription('Compute pricing estimate from active resources')
             ;

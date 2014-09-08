@@ -10,25 +10,24 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class InceptionStartCommand extends AbstractDirectorCommand
+class BoshDirectorInceptionStartCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('inception:start')
+            ->setName('boshdirector:inception:start')
             ->setDescription('Start an inception server')
-            ->addOption(
+            ->addArgument(
                 'subnet',
                 null,
-                InputOption::VALUE_REQUIRED,
+                InputArgument::REQUIRED,
                 'Subnet'
             )
-            ->addOption(
+            ->addArgument(
                 'instance-type',
                 null,
-                InputOption::VALUE_REQUIRED,
-                'Instance type',
-                't2.micro'
+                InputArgument::REQUIRED,
+                'Instance type'
             )
             ->addOption(
                 'security-group',
@@ -72,14 +71,14 @@ class InceptionStartCommand extends AbstractDirectorCommand
                 'MinCount' => 1,
                 'MaxCount' => 1,
                 'KeyName' => $privateAws['ssh_key_name'],
-                'InstanceType' => $input->getOption('instance-type'),
+                'InstanceType' => $input->getArgument('instance-type'),
                 'Placement' => [
                     'AvailabilityZone' => $networkLocal['zones'][0]['availability_zone'],
                 ],
                 'NetworkInterfaces' => [
                     [
                         'DeviceIndex' => 0,
-                        'SubnetId' => $input->getOption('subnet'),
+                        'SubnetId' => $input->getArgument('subnet'),
                         'PrivateIpAddresses' => [
                             [
                                 'PrivateIpAddress' => $networkLocal['zones'][0]['reserved']['inception'],
@@ -101,7 +100,7 @@ class InceptionStartCommand extends AbstractDirectorCommand
 
         $output->writeln('  > <info>instance-id</info> -> ' . $instance['InstanceId']);
 
-        $niceInstanceTags = $this->remapTags($instance['Tags']);
+        $niceInstanceTags = isset($instance['Tags']) ? $this->remapTags($instance['Tags']) : [];
         $addTags = [];
 
         $expectedTags = [
@@ -183,9 +182,8 @@ class InceptionStartCommand extends AbstractDirectorCommand
         $output->write('> <comment>waiting for ssh</comment>...');
 
         while (true) {
-            $sh = @fsockopen($instance['PublicIpAddress'], 22, $errno, $errstr, 8);
+            $sh = @fsockopen($instance['PrivateIpAddress'], 22, $errno, $errstr, 8);
 
-            $output->write($errstr);
             $output->write('.');
 
             if ($sh) {
@@ -206,7 +204,7 @@ class InceptionStartCommand extends AbstractDirectorCommand
             sprintf(
                 'ssh -i %s ubuntu@%s %s',
                 escapeshellarg($input->getOption('basedir') . '/' . $privateAws['ssh_key_file']),
-                $instance['PublicIpAddress'],
+                $instance['PrivateIpAddress'],
                 escapeshellarg(
                     implode(
                         ' ; ',
@@ -222,6 +220,14 @@ class InceptionStartCommand extends AbstractDirectorCommand
             )
         );
 
+        $this->execCommand(
+            $input,
+            $output,
+            'bosh:recompile',
+            [
+                '--deployment' => 'bosh',
+            ]
+        );
 
         $output->writeln('> <comment>uploading compiled/self</comment>...');
 
@@ -230,7 +236,7 @@ class InceptionStartCommand extends AbstractDirectorCommand
                 'rsync -auze %s --progress %s ubuntu@%s:%s',
                 escapeshellarg('ssh -i ' . escapeshellarg($input->getOption('basedir') . '/' . $privateAws['ssh_key_file'])),
                 escapeshellarg($input->getOption('basedir') . '/compiled/' . $input->getOption('director') . '/.'),
-                $instance['PublicIpAddress'],
+                $instance['PrivateIpAddress'],
                 escapeshellarg('~/cloque/self/.')
             )
         );
@@ -243,7 +249,7 @@ class InceptionStartCommand extends AbstractDirectorCommand
                 'rsync -auze %s --progress %s ubuntu@%s:%s',
                 escapeshellarg('ssh -i ' . escapeshellarg($input->getOption('basedir') . '/' . $privateAws['ssh_key_file'])),
                 escapeshellarg($input->getOption('basedir') . '/global/private/.'),
-                $instance['PublicIpAddress'],
+                $instance['PrivateIpAddress'],
                 escapeshellarg('~/cloque/global/private/.')
             )
         );

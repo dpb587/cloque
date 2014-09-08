@@ -15,7 +15,7 @@ class BoshDirectorReleasesPutCommand extends AbstractDirectorCommand
     protected function configure()
     {
         parent::configure()
-            ->setName('boshdirector:releases')
+            ->setName('boshdirector:releases:put')
             ->setDescription('Upload a release to the director')
             ->addArgument(
                 'release',
@@ -32,7 +32,7 @@ class BoshDirectorReleasesPutCommand extends AbstractDirectorCommand
             $output,
             [
                 'upload', 'release',
-                $input->getArgument('release') ? $input->getArgument('release') : ''
+                $input->getArgument('release') ? $input->getArgument('release') : null
             ]
         );
     }

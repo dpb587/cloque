@@ -16,7 +16,7 @@ class UtilityLogsearchShipperMetricsCheckCommand extends AbstractCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('utility:logsearch-shipper:metrics-check')
             ->setDescription('Super-generic alerting about metrics')
             ->addArgument(

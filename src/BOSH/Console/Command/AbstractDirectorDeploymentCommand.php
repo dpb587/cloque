@@ -48,7 +48,7 @@ abstract class AbstractDirectorDeploymentCommand extends AbstractDirectorCommand
                         $input->getOption('component') ? ('-' . $input->getOption('component')) : ''
                     )
                 ],
-                $args
+                (array) $args
             ),
             $passthru
         );

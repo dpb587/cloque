@@ -15,7 +15,7 @@ class OpenvpnGenerateProfileCommand extends AbstractCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('openvpn:generate-profile')
             ->setDescription('Generate an OVPN profile for a gateway')
             ->addArgument(

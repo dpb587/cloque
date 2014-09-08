@@ -14,7 +14,7 @@ class InfraGetCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('infra:get')
             ->setDescription('Get some information about the infrastructure')
             ->addArgument(

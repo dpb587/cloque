@@ -11,17 +11,17 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class InceptionProvisionBoshCommand extends AbstractDirectorCommand
+class BoshDirectorInceptionProvisionCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('inception:provision-bosh')
+            ->setName('boshdirector:inception:provision')
             ->setDescription('Start an inception server')
             ->addArgument(
-                'ami',
+                'stemcell',
                 InputArgument::REQUIRED,
-                'BOSH AMI'
+                'BOSH AMI or Stemcell URL'
             )
             ;
     }
@@ -63,11 +63,14 @@ class InceptionProvisionBoshCommand extends AbstractDirectorCommand
 
         $output->writeln('> <comment>deploying</comment>...');
 
+        $stemcell = $input->getArgument('stemcell');
+        $ami = preg_match('/^ami-/', $stemcell);
+
         passthru(
             sprintf(
                 'ssh -i %s ubuntu@%s %s',
                 escapeshellarg($input->getOption('basedir') . '/' . $privateAws['ssh_key_file']),
-                $instance['PublicIpAddress'],
+                $instance['PrivateIpAddress'],
                 escapeshellarg(
                     implode(
                         ' ; ',
@@ -75,8 +78,9 @@ class InceptionProvisionBoshCommand extends AbstractDirectorCommand
                             'set -e',
                             'cd ~/cloque/self',
                             '[ ! -f bosh-deployments.yml ] || EXARGS="--update"',
+                            !$ami ? ('echo "Downloading stemcelll..." ; wget -q ' . escapeshellarg($stemcell)) : '',
                             'bosh micro deployment bosh/bosh.yml',
-                            'bosh -n micro deploy ${EXARGS:-} ' . $input->getArgument('ami'),
+                            'bosh -n micro deploy ${EXARGS:-} ' . escapeshellarg(($ami ? $ami : basename($stemcell))),
                         ]
                     )
                 )
@@ -95,7 +99,7 @@ class InceptionProvisionBoshCommand extends AbstractDirectorCommand
             sprintf(
                 'rsync -auze %s --progress ubuntu@%s:%s %s',
                 escapeshellarg('ssh -i ' . escapeshellarg($input->getOption('basedir') . '/' . $privateAws['ssh_key_file'])),
-                $instance['PublicIpAddress'],
+                $instance['PrivateIpAddress'],
                 escapeshellarg('~/cloque/self/bosh-deployments.yml'),
                 escapeshellarg($input->getOption('basedir') . '/compiled/' . $input->getOption('director') . '/bosh-deployments.yml')
             )
