@@ -3,7 +3,7 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-error_reporting(-1);
+Symfony\Component\Debug\Debug::enable();
 
 $application = new BOSH\Console\Application();
 $application->run();

@@ -1,0 +1,97 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Resources" : {
+        "AgentSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : {
+                    "Fn::Join" : [
+                        "/",
+                        [
+                            {
+                                "Ref" : "AWS::StackName"
+                            },
+                            "boshdirector"
+                        ]
+                    ]
+                },
+                "SecurityGroupIngress" : [
+                    {
+                        "SourceSecurityGroupId" : {
+                            "Ref" : "DirectorSecurityGroup"
+                        },
+                        "FromPort" : "6868",
+                        "IpProtocol" : "tcp",
+                        "ToPort" : "6868"
+                    }
+                ],
+                "VpcId" : "{{ env['self/infrastructure/core']['VpcId'] }}"
+            }
+        },
+
+        "DirectorSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : {
+                    "Fn::Join" : [
+                        "/",
+                        [
+                            {
+                                "Ref" : "AWS::StackName"
+                            },
+                            "boshdirector"
+                        ]
+                    ]
+                },
+                "SecurityGroupEgress" : [
+                    {
+                        "CidrIp" : "0.0.0.0/0",
+                        "IpProtocol" : "-1"
+                    }
+                ],
+                "VpcId" : "{{ env['self/infrastructure/core']['VpcId'] }}"
+            }
+        },
+        "DirectorSecurityGroupIngress0" : {
+            "Type" : "AWS::EC2::SecurityGroupEgress",
+            "Properties" : {
+                "GroupId" : {
+                    "Ref" : "DirectorSecurityGroup"
+                },
+                "SourceSecurityGroupId" : {
+                    "Ref" : "AgentSecurityGroup"
+                },
+                "FromPort" : "6868",
+                "IpProtocol" : "tcp",
+                "ToPort" : "6868"
+            }
+        },
+        "DirectorSecurityGroupIngress1" : {
+            "Type" : "AWS::EC2::SecurityGroupEgress",
+            "Properties" : {
+                "GroupId" : {
+                    "Ref" : "DirectorSecurityGroup"
+                },
+                "SourceSecurityGroupId" : {
+                    "Ref" : "AgentSecurityGroup"
+                },
+                "FromPort" : "25555",
+                "IpProtocol" : "tcp",
+                "ToPort" : "25555"
+            }
+        },
+
+        "Route53Lan" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "Properties" : {
+                "HostedZoneName" : "{{ env['network']['root']['host'] }}.",
+                "Name" : "bosh.lan.{{ director_name }}.{{ env['network']['root']['name'] }}.{{ env['network']['root']['host'] }}.",
+                "ResourceRecords" : [
+                    "{{ env['network.local']['zones'][0]['reserved']['bosh'] }}"
+                ],
+                "TTL" : "900",
+                "Type" : "A"
+            }
+        }
+    }
+}

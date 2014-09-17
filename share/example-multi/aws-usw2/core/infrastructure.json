@@ -1,0 +1,603 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Resources" : {
+        "Vpc" : {
+            "Type" : "AWS::EC2::VPC",
+            "Properties" : {
+                "CidrBlock" : "{{ env['network.local']['cidr']|cidr_network }}/{{ env['network.local']['cidr']|cidr_netmask }}",
+                "EnableDnsSupport" : "true",
+                "EnableDnsHostnames" : "true",
+                "Tags" : [
+                    {
+                        "Key" : "deployment",
+                        "Value" : "infra/core"
+                    },
+                    {
+                        "Key" : "director",
+                        "Value" : "{{ network_name }}-{{ director_name }}"
+                    },
+                    {
+                        "Key" : "Name",
+                        "Value" : "{{ network_name }}-{{ director_name }}"
+                    }
+                ]
+            }
+        },
+        "Dhcp" : {
+            "Type" : "AWS::EC2::DHCPOptions",
+            "Properties" : {
+                "DomainName" : "lan.{{ director_name }}.{{ network_name }}.{{ env['network']['root']['host'] }}",
+                "DomainNameServers" : [
+                    "169.254.169.253"
+                ]
+            }
+        },
+
+        "VpcDhcp" : { 
+            "Type" : "AWS::EC2::VPCDHCPOptionsAssociation",
+            "Properties" : {
+                "DhcpOptionsId" : {
+                    "Ref" : "Dhcp"
+                },
+                "VpcId" : {
+                    "Ref" : "Vpc"
+                }
+            }
+        },
+
+        "InternetGateway" : {
+            "Type" : "AWS::EC2::InternetGateway"
+        },
+        "InternetGatewayAttachment" : {
+            "Type" : "AWS::EC2::VPCGatewayAttachment",
+            "Properties" : {
+                "InternetGatewayId" : {
+                    "Ref" : "InternetGateway"
+                },
+                "VpcId" : {
+                    "Ref" : "Vpc"
+                }
+            }
+        },
+
+        "NetworkAclDefault" : {
+            "Type" : "AWS::EC2::NetworkAcl",
+            "Properties" : {
+                "VpcId" : {
+                    "Ref" : "Vpc"
+                }
+            }
+        },
+        "NetworkAclDefaultEgress0" : {
+            "Type" : "AWS::EC2::NetworkAclEntry",
+            "Properties" : {
+                "CidrBlock" : "0.0.0.0/0",
+                "Egress" : true,
+                "NetworkAclId" : {
+                    "Ref" : "NetworkAclDefault"
+                },
+                "Protocol" : -1,
+                "RuleAction" : "allow",
+                "RuleNumber" : 100
+            }
+        },
+        "NetworkAclDefaultIngress0" : {
+            "Type" : "AWS::EC2::NetworkAclEntry",
+            "Properties" : {
+                "CidrBlock" : "0.0.0.0/0",
+                "Egress" : false,
+                "NetworkAclId" : {
+                    "Ref" : "NetworkAclDefault"
+                },
+                "Protocol" : -1,
+                "RuleAction" : "allow",
+                "RuleNumber" : 100
+            }
+        },
+
+        {% for zoneIndex, zone in env['network.local']['zones'] %}
+            "SubnetZ{{ zoneIndex }}Public" : {
+                "Type" : "AWS::EC2::Subnet",
+                "Properties" : {
+                    "AvailabilityZone" : "{{ zone['availability_zone'] }}",
+                    "CidrBlock" : "{{ zone['segments']['public']|cidr_network }}/{{ zone['segments']['public']|cidr_netmask }}",
+                    "VpcId" : {
+                        "Ref" : "Vpc"
+                    },
+                    "Tags" : [
+                        {
+                            "Key" : "deployment",
+                            "Value" : "infra/core"
+                        },
+                        {
+                            "Key" : "director",
+                            "Value" : "{{ network_name }}-{{ director_name }}"
+                        },
+                        {
+                            "Key" : "Name",
+                            "Value" : "z{{ zoneIndex }}/public"
+                        }
+                    ]
+                }
+            },
+            "SubnetZ{{ zoneIndex }}PublicNetworkAclDefault" : {
+                "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+                "Properties" : {
+                    "NetworkAclId" : {
+                        "Ref" : "NetworkAclDefault"
+                    },
+                    "SubnetId" : {
+                        "Ref" : "SubnetZ{{ zoneIndex }}Public"
+                    }
+                }
+            },
+            "SubnetZ{{ zoneIndex }}PublicRoutetable" : {
+                "Type" : "AWS::EC2::RouteTable",
+                "Properties" : {
+                    "VpcId" : {
+                        "Ref" : "Vpc"
+                    },
+                    "Tags" : [
+                        {
+                            "Key" : "deployment",
+                            "Value" : "infra/core"
+                        },
+                        {
+                            "Key" : "director",
+                            "Value" : "{{ network_name }}-{{ director_name }}"
+                        },
+                        {
+                            "Key" : "Name",
+                            "Value" : "z{{ zoneIndex }}/public"
+                        }
+                    ]
+                }
+            },
+            "SubnetZ{{ zoneIndex }}PublicRoutetableRouteInternet" : {
+                "Type" : "AWS::EC2::Route",
+                "DependsOn" : [
+                    "InternetGatewayAttachment"
+                ],
+                "Properties" : {
+                    "RouteTableId" : {
+                        "Ref" : "SubnetZ{{ zoneIndex }}PublicRoutetable"
+                    },
+                    "DestinationCidrBlock" : "0.0.0.0/0",
+                    "GatewayId" : {
+                        "Ref" : "InternetGateway"
+                    }
+                }
+            },
+            {% for route in env['network']['global'] if env['network.local']['cidr'] != route %}
+                "SubnetZ{{ zoneIndex }}PublicRoutetableRouteRemote{{ loop.index0 }}" : {
+                    "Type" : "AWS::EC2::Route",
+                    "Properties" : {
+                        "RouteTableId" : {
+                            "Ref" : "SubnetZ{{ zoneIndex }}PublicRoutetable"
+                        },
+                        "DestinationCidrBlock" : "{{ route|cidr_network }}/{{ route|cidr_netmask }}",
+                        "NetworkInterfaceId" : {
+                            "Ref" : "Z0GatewayEni"
+                        }
+                    }
+                },
+            {% endfor %}
+            "SubnetZ{{ zoneIndex }}PublicRoutetableAssoc" : {
+                "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+                "Properties" : {
+                    "RouteTableId" : {
+                        "Ref" : "SubnetZ{{ zoneIndex }}PublicRoutetable"
+                    },
+                    "SubnetId" : {
+                        "Ref" : "SubnetZ{{ zoneIndex }}Public"
+                    }
+                }
+            },
+
+            "SubnetZ{{ zoneIndex }}Private" : {
+                "Type" : "AWS::EC2::Subnet",
+                "Properties" : {
+                    "AvailabilityZone" : "{{ zone['availability_zone'] }}",
+                    "CidrBlock" : "{{ zone['segments']['private']|cidr_network }}/{{ zone['segments']['private']|cidr_netmask }}",
+                    "VpcId" : {
+                        "Ref" : "Vpc"
+                    },
+                    "Tags" : [
+                        {
+                            "Key" : "deployment",
+                            "Value" : "infra/core"
+                        },
+                        {
+                            "Key" : "director",
+                            "Value" : "{{ network_name }}-{{ director_name }}"
+                        },
+                        {
+                            "Key" : "Name",
+                            "Value" : "z{{ zoneIndex }}/private"
+                        }
+                    ]
+                }
+            },
+            "SubnetZ{{ zoneIndex }}PrivateNetworkAclDefault" : {
+                "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+                "Properties" : {
+                    "NetworkAclId" : {
+                        "Ref" : "NetworkAclDefault"
+                    },
+                    "SubnetId" : {
+                        "Ref" : "SubnetZ{{ zoneIndex }}Private"
+                    }
+                }
+            },
+            "SubnetZ{{ zoneIndex }}PrivateRoutetable" : {
+                "Type" : "AWS::EC2::RouteTable",
+                "Properties" : {
+                    "VpcId" : {
+                        "Ref" : "Vpc"
+                    },
+                    "Tags" : [
+                        {
+                            "Key" : "deployment",
+                            "Value" : "infra/core"
+                        },
+                        {
+                            "Key" : "director",
+                            "Value" : "{{ network_name }}-{{ director_name }}"
+                        },
+                        {
+                            "Key" : "Name",
+                            "Value" : "z{{ zoneIndex }}/private"
+                        }
+                    ]
+                }
+            },
+            "SubnetZ{{ zoneIndex }}PrivateRoutetableRouteInternet" : {
+                "Type" : "AWS::EC2::Route",
+                "Properties" : {
+                    "RouteTableId" : {
+                        "Ref" : "SubnetZ{{ zoneIndex }}PrivateRoutetable"
+                    },
+                    "DestinationCidrBlock" : "0.0.0.0/0",
+                    "NetworkInterfaceId" : {
+                        "Ref" : "Z0GatewayEni"
+                    }
+                }
+            },
+            {% for route in env['network']['global'] if env['network.local']['cidr'] != route %}
+                "SubnetZ{{ zoneIndex }}PrivateRoutetableRouteRemote{{ loop.index0 }}" : {
+                    "Type" : "AWS::EC2::Route",
+                    "Properties" : {
+                        "RouteTableId" : {
+                            "Ref" : "SubnetZ{{ zoneIndex }}PrivateRoutetable"
+                        },
+                        "DestinationCidrBlock" : "{{ route|cidr_network }}/{{ route|cidr_netmask }}",
+                        "NetworkInterfaceId" : {
+                            "Ref" : "Z0GatewayEni"
+                        }
+                    }
+                },
+            {% endfor %}
+            "SubnetZ{{ zoneIndex }}PrivateRoutetableAssoc" : {
+                "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+                "Properties" : {
+                    "RouteTableId" : {
+                        "Ref" : "SubnetZ{{ zoneIndex }}PrivateRoutetable"
+                    },
+                    "SubnetId" : {
+                        "Ref" : "SubnetZ{{ zoneIndex }}Private"
+                    }
+                }
+            },
+
+            "SubnetZ{{ zoneIndex }}Internal" : {
+                "Type" : "AWS::EC2::Subnet",
+                "Properties" : {
+                    "AvailabilityZone" : "{{ zone['availability_zone'] }}",
+                    "CidrBlock" : "{{ zone['segments']['internal']|cidr_network }}/{{ zone['segments']['internal']|cidr_netmask }}",
+                    "VpcId" : {
+                        "Ref" : "Vpc"
+                    },
+                    "Tags" : [
+                        {
+                            "Key" : "deployment",
+                            "Value" : "infra/core"
+                        },
+                        {
+                            "Key" : "director",
+                            "Value" : "{{ network_name }}-{{ director_name }}"
+                        },
+                        {
+                            "Key" : "Name",
+                            "Value" : "z{{ zoneIndex }}/internal"
+                        }
+                    ]
+                }
+            },
+            "SubnetZ{{ zoneIndex }}InternalNetworkAclDefault" : {
+                "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+                "Properties" : {
+                    "NetworkAclId" : {
+                        "Ref" : "NetworkAclDefault"
+                    },
+                    "SubnetId" : {
+                        "Ref" : "SubnetZ{{ zoneIndex }}Internal"
+                    }
+                }
+            },
+            "SubnetZ{{ zoneIndex }}InternalRoutetable" : {
+                "Type" : "AWS::EC2::RouteTable",
+                "Properties" : {
+                    "VpcId" : {
+                        "Ref" : "Vpc"
+                    },
+                    "Tags" : [
+                        {
+                            "Key" : "deployment",
+                            "Value" : "infra/core"
+                        },
+                        {
+                            "Key" : "director",
+                            "Value" : "{{ network_name }}-{{ director_name }}"
+                        },
+                        {
+                            "Key" : "Name",
+                            "Value" : "z{{ zoneIndex }}/internal"
+                        }
+                    ]
+                }
+            },
+            {% for route in env['network']['global'] if env['network.local']['cidr'] != route %}
+                "SubnetZ{{ zoneIndex }}InternalRoutetableRouteRemote{{ loop.index0 }}" : {
+                    "Type" : "AWS::EC2::Route",
+                    "Properties" : {
+                        "RouteTableId" : {
+                            "Ref" : "SubnetZ{{ zoneIndex }}InternalRoutetable"
+                        },
+                        "DestinationCidrBlock" : "{{ route|cidr_network }}/{{ route|cidr_netmask }}",
+                        "NetworkInterfaceId" : {
+                            "Ref" : "Z0GatewayEni"
+                        }
+                    }
+                },
+            {% endfor %}
+            "SubnetZ{{ zoneIndex }}InternalRoutetableAssoc" : {
+                "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+                "Properties" : {
+                    "RouteTableId" : {
+                        "Ref" : "SubnetZ{{ zoneIndex }}InternalRoutetable"
+                    },
+                    "SubnetId" : {
+                        "Ref" : "SubnetZ{{ zoneIndex }}Internal"
+                    }
+                }
+            },
+        {% endfor %}
+
+        "TrustedPeerSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : {
+                    "Fn::Join" : [
+                        "/",
+                        [
+                            {
+                                "Ref" : "AWS::StackName"
+                            },
+                            "trusted-peer"
+                        ]
+                    ]
+                },
+                "SecurityGroupEgress" : [],
+                "SecurityGroupIngress" : [],
+                "VpcId" : {
+                    "Ref" : "Vpc"
+                }
+            }
+        },
+        "TrustedPeerSecurityGroupIngress0" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : {
+                    "Ref" : "TrustedPeerSecurityGroup"
+                },
+                "IpProtocol" : "-1",
+                "SourceSecurityGroupId" : {
+                    "Ref" : "TrustedPeerSecurityGroup"
+                }
+            }
+        },
+        "TrustedPeerSecurityGroupEgress0" : {
+            "Type" : "AWS::EC2::SecurityGroupEgress",
+            "Properties" : {
+                "GroupId" : {
+                    "Ref" : "TrustedPeerSecurityGroup"
+                },
+                "IpProtocol" : "-1",
+                "SourceSecurityGroupId" : {
+                    "Ref" : "TrustedPeerSecurityGroup"
+                }
+            }
+        },
+
+        "PublicGlobalEgressSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : {
+                    "Fn::Join" : [
+                        "/",
+                        [
+                            {
+                                "Ref" : "AWS::StackName"
+                            },
+                            "public-global-egress"
+                        ]
+                    ]
+                },
+                "SecurityGroupEgress" : [
+                    {
+                        "CidrIp" : "0.0.0.0/0",
+                        "IpProtocol" : "-1"
+                    }
+                ],
+                "VpcId" : {
+                    "Ref" : "Vpc"
+                }
+            }
+        },
+
+        "PublicOpenvpnSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : {
+                    "Fn::Join" : [
+                        "/",
+                        [
+                            {
+                                "Ref" : "AWS::StackName"
+                            },
+                            "trusted-peer"
+                        ]
+                    ]
+                },
+                "SecurityGroupIngress" : [
+                    {
+                        "CidrIp" : "0.0.0.0/0",
+                        "FromPort" : "1194",
+                        "IpProtocol" : "tcp",
+                        "ToPort" : "1194"
+                    }
+                ],
+                "VpcId" : {
+                    "Ref" : "Vpc"
+                }
+            }
+        },
+
+        "Z0GatewayEip" : {
+           "Type" : "AWS::EC2::EIP",
+           "Properties" : {
+              "Domain" : "vpc"
+           }
+        },
+        "Z0GatewayEni" : {
+            "Type" : "AWS::EC2::NetworkInterface",
+            "Properties" : {
+                "GroupSet" : [
+                    { "Ref" : "TrustedPeerSecurityGroup" },
+                    { "Ref" : "PublicOpenvpnSecurityGroup" },
+                    { "Ref" : "PublicGlobalEgressSecurityGroup" }
+                ],
+                "PrivateIpAddresses" : [
+                    {
+                        "PrivateIpAddress" : "{{ env['network.local']['zones'][0]['reserved']['gateway'] }}",
+                        "Primary" : "true"
+                    }
+                ],
+                "SourceDestCheck" : "false",
+                "SubnetId" : { "Ref" : "SubnetZ0Public" },
+                "Tags" : [
+                    {
+                        "Key" : "deployment",
+                        "Value" : "infra/core"
+                    },
+                    {
+                        "Key" : "director",
+                        "Value" : "{{ network_name }}-{{ director_name }}"
+                    },
+                    {
+                        "Key" : "Name",
+                        "Value" : "z1/gateway"
+                    }
+                ]
+            }
+        },
+        "Z0GatewayEniEip" : {
+            "Type" : "AWS::EC2::EIPAssociation",
+            "Properties" : {
+                "AllocationId" : {
+                    "Fn::GetAtt" : [
+                        "Z0GatewayEip",
+                        "AllocationId"
+                    ]
+                },
+                "NetworkInterfaceId" : { "Ref" : "Z0GatewayEni" }
+            }
+        },
+        "Z0GatewayInstance" : {
+            "Type" : "AWS::EC2::Instance",
+            "Properties" : {
+                "AvailabilityZone" : "{{ env['network.local']['zones'][0]['availability_zone'] }}",
+                "ImageId" : "{{ env['network.local']['images']['amazon-linux']['paravirtual'] }}",
+                "InstanceType" : "t1.micro",
+                "IamInstanceProfile" : "{{ env['global/infrastructure/core']['GatewayInstanceProfileId'] }}",
+                "KeyName" : "{{ env['global.private.aws']['ssh_key_name'] }}",
+                "NetworkInterfaces" : [
+                    {
+                        "DeviceIndex" : "0",
+                        "NetworkInterfaceId" : { "Ref" : "Z0GatewayEni" }
+                    }
+                ],
+                "UserData" : {
+                    "Fn::Base64" : {
+                        "Fn::Join" : [
+                            "",
+                            [
+                                "#!/bin/bash", "\n",
+                                "set -e", "\n",
+                                "sudo sysctl -w net.ipv4.ip_forward=1 | tee -a /etc/sysctl.conf", "\n",
+                                "sudo sysctl -w net.ipv4.conf.eth0.send_redirects=0 | tee -a /etc/sysctl.conf", "\n",
+                                {# route local traffic to internet #}
+                                "sudo iptables -t nat -A POSTROUTING -s {{ env['network.local']['cidr']|cidr_network }}/{{ env['network.local']['cidr']|cidr_netmask }} -d 0/0 -j MASQUERADE -m comment --comment \"{{ director_name }} -> internet\"", "\n",
+                                {# route local traffic to local vpn clients #}
+                                "sudo iptables -t nat -A POSTROUTING -s {{ env['network']['global']['vpn']|cidr_network }}/{{ env['network']['global']['vpn']|cidr_netmask }} -d {{ env['network.local']['cidr']|cidr_network }}/{{ env['network.local']['cidr']|cidr_netmask }} -j MASQUERADE -m comment --comment \"vpn -> {{ director_name }}\"", "\n",
+                                "sudo iptables -t nat -A POSTROUTING -s {{ env['network.local']['cidr']|cidr_network }}/{{ env['network.local']['cidr']|cidr_netmask }} -d {{ env['network']['global']['vpn']|cidr_network }}/{{ env['network']['global']['vpn']|cidr_netmask }} -j MASQUERADE -m comment --comment \"{{ director_name }} -> vpn\"", "\n",
+                                {# route local traffic to other directors #}
+                                {% for routeName, route in env['network']['global'] if routeName not in [ 'vpn', director_name ] %}
+                                    "sudo iptables -t nat -A POSTROUTING -s {{ env['network.local']['cidr']|cidr_network }}/{{ env['network.local']['cidr']|cidr_netmask }} -d {{ route|cidr_network }}/{{ route|cidr_netmask }} -j MASQUERADE -m comment --comment \"{{ director_name }} -> {{ routeName }}\"", "\n",
+                                {% endfor %}
+                                "sudo service iptables save", "\n",
+                                "aws s3api get-object --bucket {{ env['network']['root']['bucket'] }} --key openvpn/gateway-package/{{ director_name }}.tgz /tmp/etc-openvpn.tgz", "\n",
+                                "sudo mkdir /etc/openvpn", "\n",
+                                "sudo tar -xzf /tmp/etc-openvpn.tgz -C /etc/openvpn", "\n",
+                                "rm /tmp/etc-openvpn.tgz", "\n",
+                                "sudo chown -R root:root /etc/openvpn/keys", "\n",
+                                "sudo chmod 755 /etc/openvpn/keys", "\n",
+                                "sudo chmod 500 /etc/openvpn/keys/*", "\n",
+                                "sudo chmod 444 /etc/openvpn/keys/{ca.crt,crl.pem,server.crt}", "\n",
+                                "/etc/openvpn/build.sh", "\n"
+                            ]
+                        ]
+                    }
+                },
+                "Tags" : [
+                    {
+                        "Key" : "deployment",
+                        "Value" : "infra/core"
+                    },
+                    {
+                        "Key" : "director",
+                        "Value" : "{{ network_name }}-{{ director_name }}"
+                    },
+                    {
+                        "Key" : "Name",
+                        "Value" : "z1/gateway"
+                    }
+                ]
+            }
+        },
+        "Z0Route53Gateway" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "Properties" : {
+                "HostedZoneName" : "{{ env['network']['root']['host'] }}.",
+                "Name" : "gateway.{{ director_name }}.{{ network_name }}.{{ env['network']['root']['host'] }}.",
+                "ResourceRecords" : [
+                    {
+                        "Ref" : "Z0GatewayEip"
+                    }
+                ],
+                "TTL" : "900",
+                "Type" : "A"
+            }
+        }
+    }
+}

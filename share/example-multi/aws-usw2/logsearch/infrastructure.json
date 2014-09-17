@@ -1,0 +1,52 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Resources" : {
+        "Z0IngestorEip" : {
+           "Type" : "AWS::EC2::EIP",
+           "Properties" : {
+              "Domain" : "vpc"
+           }
+        },
+
+        "IngestorSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : {
+                    "Fn::Join" : [
+                        "/",
+                        [
+                            {
+                                "Ref" : "AWS::StackName"
+                            },
+                            "ingestor"
+                        ]
+                    ]
+                },
+                "SecurityGroupIngress" : [
+                    {
+                        "CidrIp" : "0.0.0.0/0",
+                        "FromPort" : "5614",
+                        "IpProtocol" : "tcp",
+                        "ToPort" : "5614"
+                    }
+                ],
+                "VpcId" : "{{ env['self/infrastructure/core']['VpcId'] }}"
+            }
+        },
+
+        "IngestorDns" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "Properties" : {
+                "HostedZoneName" : "{{ env['network']['root']['host'] }}.",
+                "Name" : "ingestor.logsearch.{{ director_name }}.{{ env['network']['root']['name'] }}.{{ env['network']['root']['host'] }}.",
+                "ResourceRecords" : [
+                    {
+                        "Ref" : "Z0IngestorEip"
+                    }
+                ],
+                "TTL" : "900",
+                "Type" : "A"
+            }
+        }
+    }
+}

@@ -26,8 +26,7 @@ class BoshDeleteCommand extends AbstractDirectorDeploymentCommand
             $input,
             $output,
             [
-                'delete',
-                'deployment',
+                'delete', 'deployment',
                 $input->getOption('deployment') . ($input->getOption('component') ? ('-' . $input->getOption('component')) : ''),
             ]
         );

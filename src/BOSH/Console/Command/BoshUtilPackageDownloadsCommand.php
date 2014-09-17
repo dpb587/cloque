@@ -14,7 +14,7 @@ class BoshUtilPackageDownloadsCommand extends AbstractCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('boshutil:package-downloads')
             ->setDescription('Dump commands to download packaging spec files')
             ->addArgument(

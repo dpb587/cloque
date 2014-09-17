@@ -1,0 +1,48 @@
+---
+name: "{{ network_name }}-{{ director_name }}"
+
+network:
+  type: "manual"
+  ip: "{{ env['network.local']['zones'][0]['reserved']['bosh'] }}"
+  dns:
+    # google
+    - "8.8.8.8"
+    - "8.8.4.4"
+  cloud_properties:
+    subnet: "{{ env['self/infrastructure/core']['SubnetZ0PrivateId'] }}"
+
+resources:
+  persistent_disk: 16384
+  cloud_properties:
+    instance_type: "m3.medium"
+    availability_zone: "{{ env['network.local']['zones'][0]['availability_zone'] }}"
+
+cloud:
+  plugin: "aws"
+  properties:
+    aws:
+      access_key_id: "{{ env['global.private.aws']['access_key_id'] }}"
+      secret_access_key: "{{ env['global.private.aws']['secret_access_key'] }}"
+      default_key_name: "{{ env['global.private.aws']['ssh_key_name'] }}"
+      default_security_groups:
+        - "{{ env['self/infrastructure/bosh']['DirectorSecurityGroupName'] }}"
+        - "{{ env['self/infrastructure/core']['TrustedPeerSecurityGroupName'] }}"
+      region: "{{ env['network.local']['region'] }}"
+      ec2_private_key: "../{{ env['global.private.aws']['ssh_key_file'] }}"
+    registry:
+      endpoint: "http://admin:admin@{{ env['network.local']['zones'][0]['reserved']['inception'] }}:25888"
+
+apply_spec:
+  agent:
+    blobstore:
+      address: "{{ env['network.local']['zones'][0]['reserved']['bosh'] }}"
+    nats:
+      address: "{{ env['network.local']['zones'][0]['reserved']['bosh'] }}"
+  properties:
+    registry:
+      address: "{{ env['network.local']['zones'][0]['reserved']['bosh'] }}"
+    ntp:
+      - 0.pool.ntp.org
+      - 1.pool.ntp.org
+      - 2.pool.ntp.org
+      - 3.pool.ntp.org

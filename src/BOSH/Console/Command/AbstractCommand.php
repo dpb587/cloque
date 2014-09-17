@@ -58,7 +58,7 @@ abstract class AbstractCommand extends Command
             $input->setOption($option, $envval);
         }
 
-        if ((0 < count($missing)) && file_exists(getcwd() . '/.env')) {
+        if ((0 < count($missing)) && is_file(getcwd() . '/.env')) {
             exec('env -i bash -c "source .env ; env"', $dotenv, $exit);
 
             if ($exit) {

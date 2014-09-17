@@ -14,9 +14,14 @@ class BoshUtilPackageDockerBuildCommand extends AbstractCommand
 {
     protected function configure()
     {
-        $this
+        parent::configure()
             ->setName('boshutil:package-docker-build')
             ->setDescription('Debug the build process of a package in a Docker container')
+            ->addArgument(
+                'docker-from',
+                InputArgument::REQUIRED,
+                'Docker base image'
+            )
             ->addArgument(
                 'package',
                 InputArgument::REQUIRED,
@@ -47,7 +52,7 @@ class BoshUtilPackageDockerBuildCommand extends AbstractCommand
         mkdir($mdir . '/packages', 0700, true);
 
         $dockerfile = [
-            'FROM ubuntu:trusty',
+            'FROM ' . $input->getArgument('docker-from'),
             'RUN apt-get update && apt-get -y install build-essential cmake m4 unzip wget',
             'RUN /bin/echo "./packaging" >> ~/.bash_history',
             'ENTRYPOINT /bin/bash',

@@ -1,0 +1,155 @@
+---
+name: "logsearch"
+director_uuid: "{{ env['bosh']['target_uuid'] }}"
+
+releases:
+  - name: "logsearch"
+    version: latest
+
+compilation:
+  workers: 2
+  network: "z0_compilation"
+  reuse_compilation_vms: true
+  cloud_properties:
+    availability_zone: "us-west-2a"
+    instance_type: "c3.large"
+
+update:
+  serial: false
+  canaries: 1
+  canary_watch_time: 30000
+  update_watch_time: 30000
+  max_in_flight: 1
+  max_errors: 2
+
+networks:
+  - name: "z0_compilation"
+    type: "manual"
+    subnets:
+      - range: "10.101.33.24/30"
+        cloud_properties:
+          security_groups:
+            - "{{ env['self/infrastructure/core']['TrustedPeerSecurityGroupName'] }}"
+          subnet: "{{ env['self/infrastructure/core']['SubnetZ0InternalId'] }}"
+  - name: "z0_private"
+    type: "manual"
+    subnets:
+      - range: "10.101.17.24/28"
+        static:
+          - "10.101.17.25"
+          - "10.101.17.26"
+          - "10.101.17.27"
+          - "10.101.17.28"
+        cloud_properties:
+          security_groups:
+            - "{{ env['self/infrastructure/core']['TrustedPeerSecurityGroupName'] }}"
+          subnet: "{{ env['self/infrastructure/core']['SubnetZ0PrivateId'] }}"
+  - name: "z0_public_ingestor"
+    type: "manual"
+    subnets:
+      - range: "10.101.1.24/28"
+        static:
+          - "10.101.1.25"
+        cloud_properties:
+          security_groups:
+            - "{{ env['self/infrastructure/core']['TrustedPeerSecurityGroupName'] }}"
+            - "{{ env['self/infrastructure/logsearch']['IngestorSecurityGroupName'] }}"
+          subnet: "{{ env['self/infrastructure/core']['SubnetZ0PublicId'] }}"
+  - name: "vip"
+    type: "vip"
+    cloud_properties: {}
+
+resource_pools:
+  - name: "z0_private_m3large"
+    network: "z0_private"
+    size: 3
+    stemcell:
+      name: "bosh-aws-xen-ubuntu-trusty-go_agent-hvm"
+      version: latest
+    cloud_properties:
+      availability_zone: "us-west-2a"
+      instance_type: "m3.large"
+  - name: "z0_private_c3large"
+    network: "z0_private"
+    size: 1
+    stemcell:
+      name: "bosh-aws-xen-ubuntu-trusty-go_agent-hvm"
+      version: latest
+    cloud_properties:
+      availability_zone: "us-west-2a"
+      instance_type: "c3.large"
+  - name: "z0_public_ingestor_c3large"
+    network: "z0_public_ingestor"
+    size: 1
+    stemcell:
+      name: "bosh-aws-xen-ubuntu-trusty-go_agent-hvm"
+      version: latest
+    cloud_properties:
+      availability_zone: "us-west-2a"
+      instance_type: "c3.large"
+
+properties:
+  elasticsearch:
+    host: "10.101.17.33"
+    cluster_name: "logsearch"
+  redis:
+    host: 10.101.17.25
+  logstash_ingestor:
+    syslog_tls:
+      port: 5614
+      ssl_cert: "{{ env.embed('ssl.crt') }}"
+      ssl_key: "{{ env.embed('ssl.key') }}"
+
+jobs:
+  - name: "ingestor"
+    templates:
+      - release: "logsearch"
+        name: "ingestor_syslog"
+    instances: 1
+    resource_pool: "z0_public_ingestor_c3large"
+    networks:
+      - name: "z0_public_ingestor"
+        default:
+          - "dns"
+          - "gateway"
+        static_ips:
+          - "10.101.1.25"
+      - name: "vip"
+        static_ips:
+          - "{{ env['self/infrastructure/logsearch']['Z0IngestorEipId'] }}"
+  - name: "queue"
+    templates:
+      - release: "logsearch"
+        name: "queue"
+    instances: 1
+    resource_pool: "z0_private_m3large"
+    persistent_disk: 16384
+    networks:
+      - name: "z0_private"
+        static_ips:
+          - "10.101.17.25"
+  - name: "elasticsearch"
+    templates:
+      - release: "logsearch"
+        name: "elasticsearch"
+      - release: "logsearch"
+        name: "api"
+    instances: 2
+    resource_pool: "z0_private_m3large"
+    persistent_disk: 16384
+    networks:
+      - name: "z0_private"
+        static_ips:
+          - "10.101.17.26"
+          - "10.101.17.27"
+  - name: "parser"
+    templates:
+      - release: "logsearch"
+        name: "log_parser"
+    instances: 1
+    resource_pool: "z0_private_c3large"
+    persistent_disk: 16384
+    networks:
+      - name: "z0_private"
+        static_ips:
+          - "10.101.17.28"
