@@ -1,5 +1,22 @@
-Some scripts to help manage an opinionated idea of BOSH and AWS environments.
+Some scripts to help manage an opinionated idea of BOSH and AWS environments.  See the [blog post](http://dpb587.me/blog/2014/09/17/simplifying-my-bosh-related-workflows.html) for why this came about.
 
+# Installing cloque
+
+These install instructions are for Mac OSX.  YMMV on other OSes
+
+* [Get PHP & Composer (via Homebrew)](https://getcomposer.org/doc/00-intro.md#globally-on-osx-via-homebrew-)
+* [Get JQ > 1.4 (via Homebrew)](http://stedolan.github.io/jq/download/)
+* [Get AWS CLI](http://docs.aws.amazon.com/cli/latest/userguide/installing.html)
+* Grab cloque & install dependancies via Composer
+
+    $ git clone https://github.com/dpb587/cloque.git
+    $ cd cloque
+    $ composer install
+    $ bin/cloque  # Should give you a list of available commands
+
+* Add cloque to your path
+    
+    $ ln -s $(pwd)/bin/cloque /usr/local/bin/cloque
 
 # Getting Started
 
