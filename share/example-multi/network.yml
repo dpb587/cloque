@@ -1,6 +1,6 @@
 root:
-  name: "acme-dev"
-  host: "cloque.example.com"
+  name: "acme-dev"           # the name of your environment, eg: mycompany-production / mycompany-test
+  host: "cloque.example.com" # should refer to an existing AWS Route53 zone
   bucket: "example-cloque-acme-dev"
 about:
   name: "ACME Inc"
@@ -22,11 +22,11 @@ regions:
     vpn: "10.100.34.0/24" # 10.100.34.255
     images:
       amazon-linux:
-        hvm: "ami-d13845e1"
-        paravirtual: "ami-1b3b462b"
+        hvm: "ami-d13845e1"           # The latest Amazon Linux (HVM) AMI from the target region
+        paravirtual: "ami-1b3b462b"   # The latest Amazon Linux (PV) AMI from the target region
       ubuntu-trusty:
-        hvm: "ami-d34032e3"
-        paravirtual: "ami-f34032c3"
+        hvm: "ami-d34032e3"           # The latest Ubuntu 14.04 x64 (HVM) AMI from the target region
+        paravirtual: "ami-f34032c3"   # The latest Ubuntu 14.04 x64 (PV) AMI from the target region
     zones:
       0:
         availability_zone: "us-west-2a"
