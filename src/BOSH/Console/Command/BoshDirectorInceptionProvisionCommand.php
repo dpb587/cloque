@@ -78,7 +78,7 @@ class BoshDirectorInceptionProvisionCommand extends AbstractDirectorCommand
                             'set -e',
                             'cd ~/cloque/self',
                             '[ ! -f bosh-deployments.yml ] || EXARGS="--update"',
-                            !$ami ? ('echo "Downloading stemcelll..." ; wget -q ' . escapeshellarg($stemcell)) : '',
+                            !$ami ? ('echo "Downloading stemcell (this takes a few minutes)..." ; wget -q ' . escapeshellarg($stemcell)) : '',
                             'bosh micro deployment bosh/bosh.yml',
                             'bosh -n micro deploy ${EXARGS:-} ' . escapeshellarg(($ami ? $ami : basename($stemcell))),
                         ]
