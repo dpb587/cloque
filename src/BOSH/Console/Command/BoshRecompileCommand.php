@@ -102,15 +102,7 @@ class BoshRecompileCommand extends AbstractDirectorDeploymentCommand
             }
         }
 
-        function recur_ksort(&$array) {
-           foreach ($array as &$value) {
-              if (is_array($value)) recur_ksort($value);
-           }
-
-           return ksort($array);
-        }
-
-        recur_ksort($result);
+        $this->recur_ksort($result);
 
         $lines = explode("\n", Yaml::dump($result, 8));
 
@@ -128,5 +120,15 @@ class BoshRecompileCommand extends AbstractDirectorDeploymentCommand
         $result = str_replace('<%', '<%= "<%" %>', implode("\n", $lines));
 
         file_put_contents($destManifest, $result);
+    }
+
+    protected  function recur_ksort(&$array) {
+       foreach ($array as &$value) {
+            if (is_array($value)) {
+                $this->recur_ksort($value);
+            }
+       }
+
+       return ksort($array);
     }
 }

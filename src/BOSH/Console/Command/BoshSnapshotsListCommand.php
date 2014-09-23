@@ -10,13 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshDirectorDeploymentsListCommand extends AbstractDirectorCommand
+class BoshSnapshotsListCommand extends AbstractDirectorDeploymentCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('boshdirector:deployments')
-            ->setDescription('List all deployments in the director')
+            ->setName('bosh:snapshots:list')
+            ->setDescription('List all snapshots of the deployment')
             ->addOption(
                 'format',
                 null,
@@ -31,10 +31,10 @@ class BoshDirectorDeploymentsListCommand extends AbstractDirectorCommand
     {
         $formatted = ('bosh' != $input->getOption('format'));
 
-        $result = $this->execBosh(
+        $result = $this->execBoshDeployment(
             $input,
             $output,
-            'deployments',
+            'snapshots',
             !$formatted
         );
 
@@ -45,22 +45,27 @@ class BoshDirectorDeploymentsListCommand extends AbstractDirectorCommand
         $reformat = $this->translateKeys(
             $this->extractBoshTable($result),
             [
-                'Name' => 'name',
-                'Release(s)' => 'releases',
-                'Stemcell(s)' => 'stemcells',
+                'Job/index' => 'job',
+                'Snapshot CID' => 'cid',
+                'Created at' => 'created_at',
+                'Clean' => 'clean',
             ]
         );
 
         $reformat = array_map(
             function (array $row) {
-                $row['stemcells'] = (array) $row['stemcells'];
+                $job = explode('/', $row['job'], 2);
+                $row['job_name'] = $job[0];
+                $row['job_index'] = (int) $job[1];
+
+                $row['clean'] = filter_var($row['clean'], FILTER_VALIDATE_BOOLEAN);
 
                 return $row;
             },
             $reformat
         );
 
-        $reformat = $this->indexArrayWithKey($reformat, 'name');
+        $reformat = $this->indexArrayWithKey($reformat, 'cid');
 
         return $this->outputFormatted($output, $input->getOption('format'), $reformat);
     }

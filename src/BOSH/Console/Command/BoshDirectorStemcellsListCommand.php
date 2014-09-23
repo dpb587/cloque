@@ -10,13 +10,13 @@ use Symfony\Component\Console\Command\Command;
 use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshDirectorDeploymentsListCommand extends AbstractDirectorCommand
+class BoshDirectorStemcellsListCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('boshdirector:deployments')
-            ->setDescription('List all deployments in the director')
+            ->setName('boshdirector:stemcells')
+            ->setDescription('List all stemcells in the director')
             ->addOption(
                 'format',
                 null,
@@ -34,7 +34,7 @@ class BoshDirectorDeploymentsListCommand extends AbstractDirectorCommand
         $result = $this->execBosh(
             $input,
             $output,
-            'deployments',
+            'stemcells',
             !$formatted
         );
 
@@ -46,21 +46,33 @@ class BoshDirectorDeploymentsListCommand extends AbstractDirectorCommand
             $this->extractBoshTable($result),
             [
                 'Name' => 'name',
-                'Release(s)' => 'releases',
-                'Stemcell(s)' => 'stemcells',
+                'Version' => 'version',
+                'CID' => 'cid',
             ]
         );
 
         $reformat = array_map(
             function (array $row) {
-                $row['stemcells'] = (array) $row['stemcells'];
+                $trim = rtrim($row['version'], '*');
+
+                if ($trim !== $row['version']) {
+                    $row['version'] = $trim;
+                    $row['in_use'] = true;
+                } else {
+                    $row['in_use'] = false;
+                }
 
                 return $row;
             },
             $reformat
         );
 
-        $reformat = $this->indexArrayWithKey($reformat, 'name');
+        $reformat = $this->indexArrayWithKey(
+            $reformat,
+            function (array $value) {
+                return $value['name'] . '/' . $value['version'];
+            }
+        );
 
         return $this->outputFormatted($output, $input->getOption('format'), $reformat);
     }

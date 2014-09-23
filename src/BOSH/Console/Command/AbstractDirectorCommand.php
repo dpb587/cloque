@@ -82,6 +82,83 @@ abstract class AbstractDirectorCommand extends AbstractCommand
         }
     }
 
+    protected function extractBoshTable($stdout)
+    {
+        // find headers
+        preg_match_all('/^(\+\-+)+\+$/m', $stdout, $matches, PREG_OFFSET_CAPTURE);
+
+        $preg = '';
+
+        foreach (explode('+', trim($matches[0][0][0], '+')) as $col) {
+            $preg .= ' (.{' . (strlen($col) - 2) . '}) \|';
+        }
+        $preg = '/^\|' . $preg . '$/m';
+
+        $headersEnd = $matches[0][1][1];
+
+        // find rows
+        preg_match_all($preg, $stdout, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
+
+        $reformat = [];
+        $headers = null;
+
+        foreach ($matches as $i => $match) {
+            $columns = [];
+
+            foreach ($match as $columnIdx => $column) {
+                if ($columnIdx > 0) {
+                    $columns[] = trim($column[0]);
+                }
+            }
+
+            if ($match[0][1] < $headersEnd) {
+                // headers may span multiple rows
+                if ($headers) {
+                    foreach ($columns as $columnIdx => $column) {
+                        if ('' !== $column) {
+                            $headers[$columnIdx] .= ' ' . $column;
+                        }
+                    }
+                } else {
+                    $headers = $columns;
+                }
+
+                continue;
+            }
+
+            $reformat[] = array_combine($headers, $columns);
+        }
+
+        // merge multi-rows
+        $lastIdx = null;
+        foreach ($reformat as $rowIdx => $row) {
+            if (!empty($row[$headers[0]])) {
+                // first column isn't empty; must not be multi-row
+                $lastIdx = $rowIdx;
+
+                continue;
+            }
+
+            foreach ($headers as $header) {
+                if (empty($row[$header])) {
+                    continue;
+                }
+
+                if (!is_array($reformat[$lastIdx][$header])) {
+                    $reformat[$lastIdx][$header] = [
+                        $reformat[$lastIdx][$header],
+                    ];
+                }
+
+                $reformat[$lastIdx][$header][] = $row[$header];
+            }
+
+            unset($reformat[$rowIdx]);
+        }
+        
+        return array_values($reformat);
+    }
+
     protected function getSharedOptions()
     {
         return array_merge(

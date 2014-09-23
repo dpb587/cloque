@@ -114,4 +114,43 @@ abstract class AbstractCommand extends Command
             throw new \RuntimeException(sprintf('%s exited with %s', $name, $exitcode));
         }
     }
+
+    protected function translateKeys(array $data, array $map)
+    {
+        foreach ($data as &$row) {
+            foreach ($map as $old => $new) {
+                if (array_key_exists($old, $row)) {
+                    $row[$new] = $row[$old];
+                    unset($row[$old]);
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    protected function indexArrayWithKey(array $data, $translate) {
+        $newdata = [];
+
+        foreach ($data as $value) {
+            if (is_callable($translate)) {
+                $newdata[$translate($value)] = $value;
+            } else {
+                $newdata[$value[$translate]] = $value;
+            }
+        }
+
+        return $newdata;
+    }
+
+    protected function outputFormatted(OutputInterface $output, $format, array $data)
+    {
+        if ('json' == $format) {
+            $output->writeln(json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        } elseif ('yaml' == $format) {
+            $output->writeln(Yaml::dump($data, 4));
+        } else {
+            throw new \LogicException('Invalid format: ' . $format);
+        }
+    }
 }

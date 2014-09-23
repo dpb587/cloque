@@ -10,22 +10,17 @@ use Symfony\Component\Console\Command\Command;
 use Aws\Ec2\Ec2Client;
 use Symfony\Component\Yaml\Yaml;
 
-class BoshUtilConvertPvStemcellToHvmCommand extends AbstractDirectorCommand
+class BoshUtilConvertHvmStemcellToHvmEbsCommand extends AbstractDirectorCommand
 {
     protected function configure()
     {
         parent::configure()
-            ->setName('boshutil:convert-pv-stemcell-to-hvm')
-            ->setDescription('Create an HVM light-bosh stemcell')
+            ->setName('boshutil:convert-hvm-stemcell-to-hvm-ebs')
+            ->setDescription('Create an HVM light-bosh stemcell with EBS ephemeral disk')
             ->addArgument(
                 'stemcell-url',
                 InputArgument::REQUIRED,
                 'Upstream stemcell URL'
-            )
-            ->addArgument(
-                'hvm-ami',
-                InputArgument::REQUIRED,
-                'Source AMI'
             )
             ->addArgument(
                 'subnet-id',
@@ -36,6 +31,12 @@ class BoshUtilConvertPvStemcellToHvmCommand extends AbstractDirectorCommand
                 'security-group-id',
                 InputArgument::REQUIRED,
                 'Security Group ID'
+            )
+            ->addOption(
+                'volume-size',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'EBS volume size'
             )
             ->addOption(
                 's3-prefix',
@@ -86,9 +87,9 @@ class BoshUtilConvertPvStemcellToHvmCommand extends AbstractDirectorCommand
             return $exit;
         }
 
-        $pvManifest = Yaml::parse(file_get_contents('stemcell/stemcell.MF'));
+        $hvmManifest = Yaml::parse(file_get_contents('stemcell/stemcell.MF'));
 
-        $pvAmi = $pvManifest['cloud_properties']['ami'][$sourceRegion];
+        $hvmAmi = $hvmManifest['cloud_properties']['ami'][$sourceRegion];
 
         $output->isVerbose()
             && $output->writeln('fetched stemcell');
@@ -98,66 +99,24 @@ class BoshUtilConvertPvStemcellToHvmCommand extends AbstractDirectorCommand
             'region' => $sourceRegion,
         ]);
 
-        $pvImages = $awsEc2->describeImages([
+        $hvmImages = $awsEc2->describeImages([
             'ImageIds' => [
-                $pvAmi,
+                $hvmAmi,
             ],
         ]);
 
-        $pvImage = $pvImages['Images'][0];
-
-
-        $output->isVeryVerbose()
-            && $output->writeln('creating pv instance');
-
-        $pvInstances = $awsEc2->runInstances([
-            'ImageId' => $pvImage['ImageId'],
-            'MinCount' => 1,
-            'MaxCount' => 1,
-            'KeyName' => $privateAws['ssh_key_name'],
-            'InstanceType' => 'm3.medium',
-            'NetworkInterfaces' => [
-                [
-                    'DeviceIndex' => 0,
-                    'SubnetId' => $input->getArgument('subnet-id'),
-                    'Groups' => [
-                        $input->getArgument('security-group-id'),
-                    ],
-                ],
-            ],
-        ]);
-
-        $pvInstance = $pvInstances['Instances'][0];
-
-        $output->isVerbose()
-            && $output->writeln('created pv instance: ' . $pvInstance['InstanceId']);
-
-        sleep(10);
-
-        $pvInstance = $this->waitForInstanceStatus($output, $awsEc2, $pvInstance, 'running');
-
-
-        $awsEc2->stopInstances([
-            'InstanceIds' => [
-                $pvInstance['InstanceId'],
-            ],
-        ]);
-
-        $this->waitForInstanceStatus($output, $awsEc2, $pvInstance, 'stopped');
+        $hvmImage = $hvmImages['Images'][0];
 
 
         $output->isVeryVerbose()
             && $output->writeln('creating hvm instance');
 
         $hvmInstances = $awsEc2->runInstances([
-            'ImageId' => $input->getArgument('hvm-ami'),
+            'ImageId' => $hvmImage['ImageId'],
             'MinCount' => 1,
             'MaxCount' => 1,
             'KeyName' => $privateAws['ssh_key_name'],
-            'InstanceType' => 'm3.medium',
-            'Placement' => [
-                'AvailabilityZone' => $pvInstance['Placement']['AvailabilityZone'],
-            ],
+            'InstanceType' => 't2.micro',
             'NetworkInterfaces' => [
                 [
                     'DeviceIndex' => 0,
@@ -174,8 +133,6 @@ class BoshUtilConvertPvStemcellToHvmCommand extends AbstractDirectorCommand
         $output->isVerbose()
             && $output->writeln('created hvm instance: ' . $hvmInstance['InstanceId']);
 
-        sleep(10);
-
         $hvmInstance = $this->waitForInstanceStatus($output, $awsEc2, $hvmInstance, 'running');
 
 
@@ -189,48 +146,25 @@ class BoshUtilConvertPvStemcellToHvmCommand extends AbstractDirectorCommand
 
 
         $output->isVeryVerbose()
-            && $output->writeln('detaching ' . $pvInstance['BlockDeviceMappings'][0]['Ebs']['VolumeId'] . ' from pv');
+            && $output->writeln('creating ebs image');
 
-        $pvVolume = $awsEc2->detachVolume([
-            'VolumeId' => $pvInstance['BlockDeviceMappings'][0]['Ebs']['VolumeId'],
-        ])->toArray();
-
-        $this->waitForVolumeStatus($output, $awsEc2, $pvVolume, 'available');
-
-
-        $output->isVeryVerbose()
-            && $output->writeln('detaching ' . $hvmInstance['BlockDeviceMappings'][0]['Ebs']['VolumeId'] . ' from hvm');
-
-        $hvmVolume = $awsEc2->detachVolume([
-            'VolumeId' => $hvmInstance['BlockDeviceMappings'][0]['Ebs']['VolumeId'],
-        ])->toArray();
-
-        $this->waitForVolumeStatus($output, $awsEc2, $hvmVolume, 'available');
-
-
-        $output->isVeryVerbose()
-            && $output->writeln('attaching ' . $pvVolume['VolumeId'] . ' to hvm');
-
-        $awsEc2->attachVolume([
-            'VolumeId' => $pvVolume['VolumeId'],
-            'InstanceId' => $hvmInstance['InstanceId'],
-            'Device' => $hvmInstance['BlockDeviceMappings'][0]['DeviceName'],
-        ]);
-
-        $this->waitForVolumeStatus($output, $awsEc2, $pvVolume, 'in-use');
-
-
-        $output->isVeryVerbose()
-            && $output->writeln('creating hvm image');
-
-        $mappings = $pvImage['BlockDeviceMappings'];
+        $mappings = $hvmImage['BlockDeviceMappings'];
 
         $mappings[0]['DeviceName'] = $hvmInstance['BlockDeviceMappings'][0]['DeviceName'];
         unset($mappings[0]['Ebs']['SnapshotId']);
 
+        $mappings[1] = [
+            'DeviceName' => '/dev/sdb',
+            'Ebs' => [
+                'DeleteOnTermination' => true,
+                'VolumeSize' => $input->getOption('volume-size') ?: 8,
+                'VolumeType' => 'standard',
+            ],
+        ];
+
         $hvmImage = $awsEc2->createImage([
             'InstanceId' => $hvmInstance['InstanceId'],
-            'Name' => 'hvm of ' . $pvImage['ImageId'] . ' (' . (new \DateTime('now', new \DateTimeZone('UTC')))->format('Ymd\THis\Z') . ')',
+            'Name' => 'ebs of ' . $hvmImage['ImageId'] . ' (' . (new \DateTime('now', new \DateTimeZone('UTC')))->format('Ymd\THis\Z') . ')',
             'BlockDeviceMappings' => $mappings,
         ])->toArray();
 
@@ -239,40 +173,18 @@ class BoshUtilConvertPvStemcellToHvmCommand extends AbstractDirectorCommand
         $output->writeln('Created AMI: <info>' . $hvmImage['ImageId'] . '</info>');
 
 
-        $awsEc2->detachVolume([
-            'VolumeId' => $pvVolume['VolumeId'],
-        ])->toArray();
-
-        $this->waitForVolumeStatus($output, $awsEc2, $pvVolume, 'available');
-
-
         $output->isVeryVerbose()
             && $output->writeln('terminating instances');
 
         $awsEc2->terminateInstances([
             'InstanceIds' => [
-                $pvInstance['InstanceId'],
+                $hvmInstance['InstanceId'],
                 $hvmInstance['InstanceId'],
             ],
         ]);
 
         $output->isVerbose()
             && $output->writeln('terminated instances');
-
-
-        $output->isVeryVerbose()
-            && $output->writeln('deleting volumes');
-
-        $awsEc2->deleteVolume([
-            'VolumeId' => $pvVolume['VolumeId'],
-        ]);
-
-        $awsEc2->deleteVolume([
-            'VolumeId' => $hvmVolume['VolumeId'],
-        ]);
-
-        $output->isVerbose()
-            && $output->writeln('deleted volumes');
 
 
         $this->execCommand(
@@ -282,8 +194,8 @@ class BoshUtilConvertPvStemcellToHvmCommand extends AbstractDirectorCommand
             [
                 'stemcell-url' => $input->getArgument('stemcell-url'),
                 'source-ami' => $hvmImage['ImageId'],
-                '--s3-name' => preg_replace('/^(.*)\.(tgz)$/', '$1-hvm.$2', basename($input->getArgument('stemcell-url'))),
-                '--stemcell-name' => $pvManifest['name'] . '-hvm',
+                '--s3-name' => preg_replace('/^(.*)\.(tgz)$/', '$1-ebs.$2', basename($input->getArgument('stemcell-url'))),
+                '--stemcell-name' => $hvmManifest['name'] . '-ebs',
             ]
         );
     }
