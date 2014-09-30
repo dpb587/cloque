@@ -32,6 +32,7 @@ class BoshDirectorInceptionResurrectCommand extends AbstractDirectorCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $output->writeln('><comment>Resurrecting microBOSH</comment>...');
         $h = new \BOSH\Console\Command\BoshDirectorHelpers($input, $output);
 
         $previousDeploymentFile = $input->getOption('basedir') . '/compiled/' . $input->getOption('director') . '/bosh-deployments.yml';
@@ -41,11 +42,8 @@ class BoshDirectorInceptionResurrectCommand extends AbstractDirectorCommand
         }
 
         $previousDeploymentInstanceId = $h->getBOSHDeploymentValue('vm_cid');
-        $awsEc2 = \Aws\Ec2\Ec2Client::factory([
-            'region' => $h->getNetwork()['region'],
-        ]);
 
-        $previousDeployment = $awsEc2->describeInstances([
+        $previousDeployment = $h->ec2Client->describeInstances([
             'InstanceIds' => [
                 $previousDeploymentInstanceId,
             ],
@@ -99,10 +97,10 @@ EOT;
         $output->writeln("  > <info>Detach new disk $newDiskId and attach old disk $previousDeploymentDiskId to instance: $boshInstanceId</info>");
 
         $output->write("Detaching...");
-        $awsEc2->detachVolume(array(
+        $h->ec2Client->detachVolume(array(
             'VolumeId' => $newDiskId
         ));
-        $awsEc2->waitUntilVolumeAvailable(array(
+        $h->ec2Client->waitUntilVolumeAvailable(array(
             'VolumeId' => $newDiskId
         ));
 
@@ -113,12 +111,12 @@ EOT;
         while (!$volumeAttached && $retries < 20) {
             try {
                 $output->write('.');
-                $awsEc2->attachVolume(array(
+                $h->ec2Client->attachVolume(array(
                     'VolumeId' => $previousDeploymentDiskId,
                     'InstanceId' => $boshInstanceId,
                     'Device' => '/dev/sdf'
                 ));
-                $awsEc2->waitUntilVolumeAvailable(array(
+                $h->ec2Client->waitUntilVolumeAvailable(array(
                     'VolumeId' => $previousDeploymentDiskId
                 ));
                 $volumeAttached = true;
@@ -129,7 +127,7 @@ EOT;
         }
 
         $output->write(" Deleting ...");
-        $awsEc2->deleteVolume(array(
+        $h->ec2Client->deleteVolume(array(
             'VolumeId' => $newDiskId
         ));
 
@@ -144,15 +142,11 @@ EOT;
         $output->writeln('  > <info>Restarting microBOSH</info>');
         $h->runOnServer('ubuntu', $inceptionIp, ['cd ~/cloque/self','bosh micro agent start']);
 
-        $output->writeln('> <comment>Old microBOSH resurrected!</comment>...');
+        $h->fetchBoshDeployments($inceptionIp);
 
-        $output->writeln('> <comment>fetching updated bosh-deployments.yml</comment>...');
-        $h->rsyncFromServer(
-            "ubuntu@$inceptionIp:~/cloque/self/bosh-deployments.yml",
-            $input->getOption('basedir') . '/compiled/' . $input->getOption('director') . '/bosh-deployments.yml'
-        );
+        $h->tagDirectorResources();
 
-        $output->writeln('done');
+        $output->writeln('><info>Old microBOSH resurrected successfully</info>');
     }
 
 }

@@ -17,11 +17,42 @@ class BoshDirectorHelpers
     protected $input;
     protected $output;
 
+    public $ec2Client;
+
     function __construct(InputInterface $input, OutputInterface $output) {
        $this->input = $input;
        $this->output = $output;
 
        $this->privateAws = Yaml::parse(file_get_contents($input->getOption('basedir') . '/global/private/aws.yml'));
+       $this->ec2Client = \Aws\Ec2\Ec2Client::factory([
+            'region' => $this->getNetwork()['region'],
+        ]);
+    }
+
+    public function tagDirectorResources() {
+        $this->output->write('> <comment>tagging</comment>...');
+
+        $network = Yaml::parse(file_get_contents($this->input->getOption('basedir') . '/network.yml'));
+        $this->ec2Client->createTags([
+            'Resources' => [
+                $this->getBoshDeploymentValue('vm_cid'),
+            ],
+            'Tags' => [
+                [
+                    'Key' => 'Name',
+                    'Value' => 'microbosh',
+                ],
+                [
+                    'Key' => 'deployment',
+                    'Value' => 'bosh',
+                ],
+                [
+                    'Key' => 'director',
+                    'Value' => $network['root']['name'] . '-' . $this->input->getOption('director'),
+                ],
+            ],
+        ]);
+        $this->output->writeln('done');
     }
 
     public function getBoshDeploymentValue($key) {
@@ -34,7 +65,7 @@ class BoshDirectorHelpers
     }
 
     public function captureFromServer($username, $ip, $cmds) {
-         $output = "";
+         $stdout = "";
          $return_var = 0;
          exec(
             sprintf(
@@ -49,14 +80,14 @@ class BoshDirectorHelpers
                     )
                 )
             ),
-            $output,
+            $stdout,
             $return_var
         );
 
         if ($return_var) {
             throw new \RuntimeException('Exit code ' . $return_var);
         }
-        return $output;
+        return $stdout;
     }
 
     public function runOnServer($username, $ip, $cmds) {
@@ -105,6 +136,15 @@ class BoshDirectorHelpers
         );
     }
 
+    public function fetchBoshDeployments($inceptionIp) {
+        $this->output->writeln('> <comment>fetching updated bosh-deployments.yml</comment>...');
+
+        $this->rsyncFromServer(
+            "ubuntu@$inceptionIp:~/cloque/self/bosh-deployments.yml",
+            $this->input->getOption('basedir') . '/compiled/' . $this->input->getOption('director') . '/bosh-deployments.yml'
+        );
+    }
+
     public function getNetwork() {
         $network = Yaml::parse(file_get_contents($this->input->getOption('basedir') . '/network.yml'));
         return $network['regions'][$this->input->getOption('director')];
@@ -112,13 +152,9 @@ class BoshDirectorHelpers
 
     public function getInceptionInstanceDetails() {
 
-        $awsEc2 = \Aws\Ec2\Ec2Client::factory([
-            'region' => $this->getNetwork()['region'],
-        ]);
-
         $this->output->write('> <comment>finding inception instance</comment>...');
 
-        $instances = $awsEc2->describeInstances([
+        $instances = $this->ec2Client->describeInstances([
             'Filters' => [
                 [
                     'Name' => 'network-interface.addresses.private-ip-address',
@@ -135,6 +171,9 @@ class BoshDirectorHelpers
 
         $this->output->writeln('found');
 
-        return $instances['Reservations'][0]['Instances'][0];
+        $instance = $instances['Reservations'][0]['Instances'][0];
+        $this->output->writeln('  > <info>instance-id</info> -> ' . $instance['InstanceId']);
+
+        return $instance;
     }
 }
