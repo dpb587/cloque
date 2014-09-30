@@ -2,13 +2,9 @@
 
 namespace BOSH\Console\Command;
 
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Command\Command;
-use BOSH\Deployment\ManifestModel;
 use Symfony\Component\Yaml\Yaml;
 
 class BoshDirectorHelpers
@@ -19,7 +15,8 @@ class BoshDirectorHelpers
 
     public $ec2Client;
 
-    function __construct(InputInterface $input, OutputInterface $output) {
+    public function __construct(InputInterface $input, OutputInterface $output)
+    {
        $this->input = $input;
        $this->output = $output;
 
@@ -29,7 +26,8 @@ class BoshDirectorHelpers
         ]);
     }
 
-    public function tagDirectorResources() {
+    public function tagDirectorResources()
+    {
         $this->output->write('> <comment>tagging</comment>...');
 
         $network = Yaml::parse(file_get_contents($this->input->getOption('basedir') . '/network.yml'));
@@ -55,16 +53,19 @@ class BoshDirectorHelpers
         $this->output->writeln('done');
     }
 
-    public function getBoshDeploymentValue($key) {
+    public function getBoshDeploymentValue($key)
+    {
         $value=array('','');
         # symfony yaml doesn't like ruby names, so regex out the data we need
-        preg_match('/\s+:'.$key.':\s+(.*)/', 
+        preg_match('/\s+:'.$key.':\s+(.*)/',
             file_get_contents($this->input->getOption('basedir') . '/compiled/' . $this->input->getOption('director') . '/bosh-deployments.yml'),
-            $value); 
+            $value);
+
         return $value[1];
     }
 
-    public function captureFromServer($username, $ip, $cmds) {
+    public function captureFromServer($username, $ip, $cmds)
+    {
          $stdout = "";
          $return_var = 0;
          exec(
@@ -73,7 +74,7 @@ class BoshDirectorHelpers
                 escapeshellarg($this->input->getOption('basedir') . '/' . $this->privateAws['ssh_key_file']),
                 $username,
                 $ip,
-                escapeshellarg( 
+                escapeshellarg(
                     implode(
                         ' ; ',
                         $cmds
@@ -87,10 +88,12 @@ class BoshDirectorHelpers
         if ($return_var) {
             throw new \RuntimeException('Exit code ' . $return_var);
         }
+
         return $stdout;
     }
 
-    public function runOnServer($username, $ip, $cmds) {
+    public function runOnServer($username, $ip, $cmds)
+    {
          $return_var = 0;
          passthru(
             sprintf(
@@ -98,7 +101,7 @@ class BoshDirectorHelpers
                 escapeshellarg($this->input->getOption('basedir') . '/' . $this->privateAws['ssh_key_file']),
                 $username,
                 $ip,
-                escapeshellarg( 
+                escapeshellarg(
                     implode(
                         ' ; ',
                         $cmds
@@ -113,8 +116,8 @@ class BoshDirectorHelpers
         }
     }
 
-
-    public function rsyncToServer($local, $remote) {
+    public function rsyncToServer($local, $remote)
+    {
         passthru(
             sprintf(
                 'rsync -auze %s --progress %s %s',
@@ -125,7 +128,8 @@ class BoshDirectorHelpers
         );
     }
 
-    public function rsyncFromServer($remote, $local) {
+    public function rsyncFromServer($remote, $local)
+    {
         passthru(
             sprintf(
                 'rsync -auze %s --progress %s %s',
@@ -136,7 +140,8 @@ class BoshDirectorHelpers
         );
     }
 
-    public function fetchBoshDeployments($inceptionIp) {
+    public function fetchBoshDeployments($inceptionIp)
+    {
         $this->output->writeln('> <comment>fetching updated bosh-deployments.yml</comment>...');
 
         $this->rsyncFromServer(
@@ -145,13 +150,15 @@ class BoshDirectorHelpers
         );
     }
 
-    public function getNetwork() {
+    public function getNetwork()
+    {
         $network = Yaml::parse(file_get_contents($this->input->getOption('basedir') . '/network.yml'));
+
         return $network['regions'][$this->input->getOption('director')];
     }
 
-    public function getInceptionInstanceDetails() {
-
+    public function getInceptionInstanceDetails()
+    {
         $this->output->write('> <comment>finding inception instance</comment>...');
 
         $instances = $this->ec2Client->describeInstances([

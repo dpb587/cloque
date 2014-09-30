@@ -3,15 +3,9 @@
 namespace BOSH\Console\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Command\Command;
-use BOSH\Deployment\ManifestModel;
-use Symfony\Component\Yaml\Yaml;
-
-use BOSH\Console\Command\BoshDirectorHelpers;
 
 class BoshDirectorInceptionProvisionCommand extends AbstractDirectorCommand
 {
@@ -50,11 +44,11 @@ class BoshDirectorInceptionProvisionCommand extends AbstractDirectorCommand
         ]);
 
         $h->fetchBoshDeployments($inceptionIp);
-    
+
         $h->tagDirectorResources();
 
         $output->writeln('> <info>microBOSH deployed successfully</info>');
-        
+
     }
 
 }

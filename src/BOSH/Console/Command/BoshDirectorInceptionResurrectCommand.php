@@ -3,15 +3,9 @@
 namespace BOSH\Console\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Command\Command;
-use BOSH\Deployment\ManifestModel;
-use Symfony\Component\Yaml\Yaml;
-
-use BOSH\Console\Command\BoshDirectorHelpers;
 
 class BoshDirectorInceptionResurrectCommand extends AbstractDirectorCommand
 {
@@ -38,6 +32,7 @@ class BoshDirectorInceptionResurrectCommand extends AbstractDirectorCommand
         $previousDeploymentFile = $input->getOption('basedir') . '/compiled/' . $input->getOption('director') . '/bosh-deployments.yml';
         if ( ! file_exists ( $previousDeploymentFile ) ) {
             $output->writeln("  > <info>unable for find previous deployments in: $previousDeploymentFile. Aborting since there is nothing to resurrect.</info>");
+
             return;
         }
 
@@ -49,18 +44,19 @@ class BoshDirectorInceptionResurrectCommand extends AbstractDirectorCommand
             ],
         ]);
 
-        if  (   !   empty($previousDeployment['Reservations']) 
+        if  (   !   empty($previousDeployment['Reservations'])
                 &&  $previousDeployment['Reservations'][0]['Instances'][0]['State']['Name'] == 'running' ) {
             $output->writeln("  > <info>Found existing microBOSH running as instance: $previousDeploymentInstanceId.  Aborting since no resurrection required.</info>");
+
             return;
         }
 
-        $previousDeploymentDiskId = $h->getBOSHDeploymentValue('disk_cid'); 
+        $previousDeploymentDiskId = $h->getBOSHDeploymentValue('disk_cid');
         $output->writeln("> <comment>Existing microBOSH instance $previousDeploymentInstanceId missing.  Launching new microBOSH and then attaching old microBOSH's disk ($previousDeploymentDiskId) to it</comment>...");
         $previousDeploymentFileBackup = $previousDeploymentFile.date("YmdHis");
         $output->writeln("> <comment>Backing up previous deployment settings to $previousDeploymentFileBackup</comment>...");
         copy($previousDeploymentFile, $previousDeploymentFileBackup);
-        
+
         $resurrectionDeploymentContents = <<<EOT
 ---
 instances:
@@ -77,14 +73,14 @@ EOT;
         $h->rsyncToServer(
             $previousDeploymentFile.'.resurrect'
             ,"ubuntu@$inceptionIp:~/cloque/self/bosh-deployments.yml"
-        );           
+        );
 
         $output->writeln('  > <info>deploying microBOSH</info>...');
         $this->execCommand($input, $output, 'boshdirector:inception:provision', [ 'stemcell' => $input->getArgument('stemcell') ]);
 
         $output->writeln('> <comment>attaching old microBOSH persistent disk to new microBOSH</comment>...');
         $output->write('  > <info>unmounting new disk</info>...');
-        preg_match('/\["(.*)"\]/', $h->captureFromServer('ubuntu', $inceptionIp, ['cd ~/cloque/self','bosh micro agent list_disk'])[0],$newDiskId); 
+        preg_match('/\["(.*)"\]/', $h->captureFromServer('ubuntu', $inceptionIp, ['cd ~/cloque/self','bosh micro agent list_disk'])[0],$newDiskId);
         $newDiskId = $newDiskId[1];
         $h->runOnServer('ubuntu', $inceptionIp, [
             'cd ~/cloque/self',
@@ -104,7 +100,7 @@ EOT;
             'VolumeId' => $newDiskId
         ));
 
-        //Detaching the old volume takes a while, so retry a few times when attaching the new one 
+        //Detaching the old volume takes a while, so retry a few times when attaching the new one
         //to deal with "Attachment point /dev/sdf is already in use" errors
         $output->write(" Attaching ...");
         $volumeAttached = false; $retries = 0;
@@ -122,7 +118,7 @@ EOT;
                 $volumeAttached = true;
             } catch (\Aws\Ec2\Exception\Ec2Exception $e) {
                 $retries++;
-                sleep(3); 
+                sleep(3);
             }
         }
 
