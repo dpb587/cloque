@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ name }}/{{ version }}</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="header">
+        <ul class="nav nav-pills pull-right">
+          <li><a href="#jobs">Jobs</a></li>
+          <li><a href="#packages">Packages</a></li>
+          <li><a href="#properties">Properties</a></li>
+        </ul>
+        <h3>{{ name }}</h3>
+      </div>
+
+      <hr id="summary" />
+
+      <div class="row">
+        <div class="col-md-2">
+          <h3 id="summary-release">release</h3>
+
+          <div style="margin:8px 0;">
+            <div class="text-muted">Version</div>
+            <span title="{{ commit_hash }}{% if uncommitted_changes %}*{% endif %}">{{ version }}</span>
+          </div>  
+        </div>
+
+        <div class="col-md-10">
+          <h4 class="text-muted" style="height:26px;margin-top:20px;margin-bottom:10px;padding:6px 0 1px 3px;">
+          {% if _notes %}
+            Notes</h4>
+
+            <div style="margin-bottom:24px;">
+              {{ _notes|markdown }}
+            </div>
+
+            <h4 class="text-muted" style="padding-left:3px;">
+          {% endif %}
+
+            Summary
+          </h4>
+
+          <table class="table" style="table-layout:fixed;">
+            <tr>
+              <td>Artifact</td>
+              <td style="width:80%;">
+                {% if _artifact %}
+                  <a href="{{ _artifact }}">{{ _artifact }}</a>
+                {% else %}
+                  <span class="text-muted">unavailable</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>Jobs</td>
+              <td style="width:80%;">
+                {% for job in jobs %}{% if loop.index0 %},{% endif %}
+                  <a href="#job-{{ job.name }}">{{ job.name }}</a>{#
+                #}{% endfor %}
+              </td>
+            </tr>
+            <tr>
+              <td>Packages</td>
+              <td style="width:80%;">
+                {% for package in packages %}{% if loop.index0 %},{% endif %}
+                  <a href="#package-{{ package.name }}">{{ package.name }}</a>{#
+                #}{% endfor %}
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <hr id="jobs" />
+
+      {% for job in jobs %}
+        <div class="row">
+          <div class="col-md-2">
+            <h3 id="job-{{ job.name }}">{{ job.name }}</h3>
+
+            <div style="margin:8px 0;">
+              <div class="text-muted">Version</div>
+              <span title="{{ job.version }}">{{ job.version[0:10] }}</span>
+            </div>
+          </div>
+
+          <div class="col-md-10">
+            <h4 class="text-muted" style="height:26px;margin-top:20px;margin-bottom:10px;padding:6px 0 1px 3px;">Job Summary</h4>
+
+            <table class="table" style="table-layout:fixed;">
+              <tr>
+                <td>Depends On</td>
+                <td style="width:60%;">
+                  {% for package in job.spec.packages|default([]) %}{% if loop.index0 %},{% endif %}
+                    <a href="#package-{{ package }}">{{ package }}</a>{#
+                  #}{% else %}
+                    <span class="text-muted">nothing</span>
+                  {% endfor %}
+                </td>
+              </tr>
+            </table>
+
+            <h4 class="text-muted" style="padding-left:3px;">Properties</h4>
+
+            <table class="table" style="table-layout:fixed;">
+              {% for propertyKey, property in job.spec.properties %}
+                <tr id="job-{{ job.name }}-property-{{ propertyKey }}">
+                  <td style="width:20px;">
+                    {% if 'default' in property|keys %}
+                      {% if none == property.default %}
+                        <span class="js-tooltip glyphicon glyphicon-unchecked" title="No Value Required" style="color:#31708f;" data-toggle="tooltip" data-placement="bottom"></span>
+                      {% else %}
+                        <span class="js-tooltip glyphicon glyphicon-check" title="Has Default Value" style="color:#3c763d;" data-toggle="tooltip" data-placement="bottom"></span>
+                      {% endif %}
+                    {% else %}
+                      <span class="js-tooltip glyphicon glyphicon-edit" title="Needs User Value" style="color:#a94442;" data-toggle="tooltip" data-placement="bottom"></span>
+                    {% endif %}
+                  </td>
+                  <td style="width:40%;word-wrap:break-word;">
+                    <code>{{ propertyKey }}</code>
+                    {% if property.type|default %}<br />
+                      <small><samp>{{ property.type }}</samp></small>
+                    {% endif %}
+                  </td>
+                  <td style="width:60%;">
+                    {% if property.description|default %}
+                      <strong>{{ property.description|markdown }}</strong>
+                    {% else %}
+                      <span style="color:#999999;">&mdash;</span>
+                    {% endif %}
+
+                    {% if property.help|default %}
+                      <div>
+                        {{ property.help|markdown }}
+                      </div>
+                    {% endif %}
+
+                    {% if property.example|default %}
+                      <div>
+                        <hr style="margin:4px -2px;" />
+                        <div style="padding:0 3px 1px;">Example</div>
+                        <div style="overflow:auto;"><pre style="word-wrap:inherit;"><code style="white-space:inherit;">{{ property.example|yaml_encode }}</code></pre></div>
+                      </div>
+                    {% endif %}
+
+                    {% if 'default' in property|keys and none != property.default %}
+                      <div>
+                        <hr style="margin:4px -2px;" />
+                        <div style="padding:0 3px 1px;">Default Value</div>
+                        <div style="overflow:auto;"><pre style="word-wrap:inherit;"><code style="white-space:inherit;">{{ property.default|yaml_encode }}</code></pre></div>
+                      </div>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </table>
+          </div>
+        </div>
+      {% endfor %}
+
+      <hr id="packages" />
+
+      {% for package in packages %}
+        <div class="row">
+          <div class="col-md-2">
+            <h3 id="package-{{ package.name }}">{{ package.name }}</h3>
+
+            <div style="margin:8px 0;">
+              <div class="text-muted">Version</div>
+              <span title="{{ package.version }}">{{ package.version[0:10] }}</span>
+            </div>
+          </div>
+
+          <div class="col-md-10">
+            <h4 class="text-muted" style="height:26px;margin-top:20px;margin-bottom:10px;padding:6px 0 1px 3px;">
+              Package Summary
+            </h4>
+
+            <table class="table" style="table-layout:fixed;">
+              <tr>
+                <td>Depends On</td>
+                <td style="width:60%;">
+                  {% for package in package.dependencies|default([]) %}{% if loop.index0 %},{% endif %}
+                    <a href="#package-{{ package }}">{{ package }}</a>{#
+                  #}{% else %}
+                    <span class="text-muted">nothing</span>
+                  {% endfor %}
+                </td>
+              </tr>
+              <tr>
+                <td>Used By</td>
+                <td>
+                  {% for job in jobs if package.name in job.spec.packages|default([]) %}{% if loop.index0 %},{% endif %}
+                    <a href="#job-{{ job.name }}">{{ job.name }}</a>{#
+                  #}{% else %}
+                    <span class="text-muted">nothing</span>
+                  {% endfor %}
+                </td>
+              </tr>
+              <tr>
+                <td>Files</td>
+                <td>
+                  <table style="width:100%;">
+                    {% for file in package.spec.files %}
+                      <tr>
+                        <td>{{ file }}</td>
+                        <td style="text-align:right;">{{ package.filesize[file]|filesize_format }}</td>
+                      </tr>
+                    {% endfor %}
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      {% endfor %}
+
+      <hr id="properties" />
+
+      <div class="row">
+        <div class="col-md-2">
+          <h3>Properties</h3>
+        </div>
+
+        <div class="col-md-10" style="padding-top:20px;">
+          <table class="table" style="table-layout:fixed;">
+            <thead>
+              <tr>
+                <th class="text-muted">Name</th>
+                <th class="text-muted">Jobs</th>
+              </tr>
+            </thead>
+            {% for propertyKey, propertyJobs in all_properties %}
+              <tr>
+                <td style="word-wrap:break-word;"><code>{{ propertyKey }}</code></td>
+                <td style="width:50%;">
+                  {% for job in propertyJobs %}{% if loop.index0 %},{% endif %}
+                    <a href="#job-{{ job }}-property-{{ propertyKey }}">{{ job }}</a>{#
+                  #}{% endfor %}
+                </td>
+              </tr>
+            {% endfor %}
+          </table>
+        </div>
+      </div>
+
+    </div> <!-- /container -->
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script>
+        (function () {
+          var tooltips = jQuery('.js-tooltip');
+
+          for (var i = 0; i < tooltips.length; i += 1) {
+            $(tooltips[i]).tooltip();
+          }
+        })();
+    </script>
+  </body>
+</html>
