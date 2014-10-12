@@ -131,7 +131,7 @@ EOT;
 
         $output->writeln('  > <info>Changing disk id reference in (microBOSH):/var/vcap/bosh/settings.json</info>');
         $boshIP = $h->captureFromServer('ubuntu', $inceptionIp, ['grep -Po \'"ip":"\K(.*?)(?=")\' ~/cloque/self/bosh-deployments.yml'])[0];
-        $h->runOnServer('vcap', $boshIP, ["echo c1oudc0w | sudo sed -i 's/$newDiskId/$previousDeploymentDiskId/' /var/vcap/bosh/settings.json"]);
+        $h->runOnServer('vcap', $boshIP, ["echo c1oudc0w | sudo -p \"\" -S -- sed -i 's/$newDiskId/$previousDeploymentDiskId/' /var/vcap/bosh/settings.json"]);
         $output->writeln('  > <info>Changing disk id reference in  ~/cloque/self/bosh-deployments.yml</info>');
         $h->runOnServer('ubuntu', $inceptionIp, ["sed -i 's/$newDiskId/$previousDeploymentDiskId/' ~/cloque/self/bosh-deployments.yml"]);
 
