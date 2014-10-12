@@ -28,6 +28,7 @@ class BoshDirectorInceptionResurrectCommand extends AbstractDirectorCommand
     {
         $output->writeln('><comment>Resurrecting microBOSH</comment>...');
         $h = new \BOSH\Console\Command\BoshDirectorHelpers($input, $output);
+        $awsHelper = new \BOSH\Console\Command\AWSHelpers($h->ec2Client, $output);
 
         $previousDeploymentFile = $input->getOption('basedir') . '/compiled/' . $input->getOption('director') . '/bosh-deployments.yml';
         if ( ! file_exists ( $previousDeploymentFile ) ) {
@@ -92,40 +93,10 @@ EOT;
         $boshInstanceId = $h->captureFromServer('ubuntu', $inceptionIp, ['awk \'/\s+:vm_cid:\s+(.*)/ { print $2 }\' ~/cloque/self/bosh-deployments.yml'])[0];
         $output->writeln("  > <info>Detach new disk $newDiskId and attach old disk $previousDeploymentDiskId to instance: $boshInstanceId</info>");
 
-        $output->write("Detaching...");
-        $h->ec2Client->detachVolume(array(
-            'VolumeId' => $newDiskId
-        ));
-        $h->ec2Client->waitUntilVolumeAvailable(array(
-            'VolumeId' => $newDiskId
-        ));
-
-        //Detaching the old volume takes a while, so retry a few times when attaching the new one
-        //to deal with "Attachment point /dev/sdf is already in use" errors
-        $output->write(" Attaching ...");
-        $volumeAttached = false; $retries = 0;
-        while (!$volumeAttached && $retries < 20) {
-            try {
-                $output->write('.');
-                $h->ec2Client->attachVolume(array(
-                    'VolumeId' => $previousDeploymentDiskId,
-                    'InstanceId' => $boshInstanceId,
-                    'Device' => '/dev/sdf'
-                ));
-                $h->ec2Client->waitUntilVolumeAvailable(array(
-                    'VolumeId' => $previousDeploymentDiskId
-                ));
-                $volumeAttached = true;
-            } catch (\Aws\Ec2\Exception\Ec2Exception $e) {
-                $retries++;
-                sleep(3);
-            }
-        }
-
-        $output->write(" Deleting ...");
-        $h->ec2Client->deleteVolume(array(
-            'VolumeId' => $newDiskId
-        ));
+        $output->write("  > ");
+        $awsHelper->detachVolume($newDiskId);
+        $awsHelper->attachVolume($boshInstanceId, $previousDeploymentDiskId, '/dev/sdf');
+        $awsHelper->deleteVolume($newDiskId);
 
         $output->writeln("done.");
 
