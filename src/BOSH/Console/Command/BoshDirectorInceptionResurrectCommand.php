@@ -79,6 +79,10 @@ EOT;
         $output->writeln('  > <info>deploying microBOSH</info>...');
         $this->execCommand($input, $output, 'boshdirector:inception:provision', [ 'stemcell' => $input->getArgument('stemcell') ]);
 
+        $output->writeln('> <comment>Updating ~/.ssh/known_hosts with new microBOSH info</comment>...');
+        $boshIP = $h->captureFromServer('ubuntu', $inceptionIp, ['grep -Po \'"ip":"\K(.*?)(?=")\' ~/cloque/self/bosh-deployments.yml'])[0];
+        $h->updateTrustedSSHKey($boshIP);
+
         $output->writeln('> <comment>attaching old microBOSH persistent disk to new microBOSH</comment>...');
         $output->write('  > <info>unmounting new disk</info>...');
         preg_match('/\["(.*)"\]/', $h->captureFromServer('ubuntu', $inceptionIp, ['cd ~/cloque/self','bosh micro agent list_disk'])[0], $newDiskId);
@@ -101,7 +105,6 @@ EOT;
         $output->writeln("done.");
 
         $output->writeln('  > <info>Changing disk id reference in (microBOSH):/var/vcap/bosh/settings.json</info>');
-        $boshIP = $h->captureFromServer('ubuntu', $inceptionIp, ['grep -Po \'"ip":"\K(.*?)(?=")\' ~/cloque/self/bosh-deployments.yml'])[0];
         $h->runOnServer('vcap', $boshIP, ["echo c1oudc0w | sudo -p \"\" -S -- sed -i 's/$newDiskId/$previousDeploymentDiskId/' /var/vcap/bosh/settings.json"]);
         $output->writeln('  > <info>Changing disk id reference in  ~/cloque/self/bosh-deployments.yml</info>');
         $h->runOnServer('ubuntu', $inceptionIp, ["sed -i 's/$newDiskId/$previousDeploymentDiskId/' ~/cloque/self/bosh-deployments.yml"]);

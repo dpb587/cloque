@@ -64,13 +64,19 @@ class BoshDirectorHelpers
         return $value[1];
     }
 
+    public function updateTrustedSSHKey($hostIp)
+    {
+        passthru("ssh-keygen -R '$hostIp'");
+        passthru("ssh-keyscan -H $hostIp >> ~/.ssh/known_hosts");
+    }
+
     public function captureFromServer($username, $ip, $cmds)
     {
          $stdout = "";
          $return_var = 0;
          exec(
             sprintf(
-                'ssh -o "StrictHostKeyChecking no" -t -i %s %s@%s %s',
+                'ssh -t -i %s %s@%s %s',
                 escapeshellarg($this->input->getOption('basedir') . '/' . $this->privateAws['ssh_key_file']),
                 $username,
                 $ip,
