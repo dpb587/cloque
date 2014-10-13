@@ -2,16 +2,14 @@
 
 namespace BOSH\Console\Command;
 
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Yaml\Yaml;
 
 class AWSHelpers
 {
     public $ec2Client;
+    public $output;
 
-    public function __construct($ec2Client, $output)
+    public function __construct($ec2Client, OutputInterface $output)
     {
        $this->ec2Client = $ec2Client;
        $this->output = $output;
@@ -20,7 +18,8 @@ class AWSHelpers
     public function attachVolume($instanceId, $volumeId, $device, $maxRetries = 20)
     {
         $this->output->write(" Attaching volume $volumeId ..");
-        $volumeAttached = false; $retries = 0;
+        $volumeAttached = false; 
+        $retries = 0;
         while (!$volumeAttached && $retries < $maxRetries) {
             try {
                 $this->output->write('.');

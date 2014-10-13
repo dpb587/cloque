@@ -31,9 +31,9 @@ class BoshDirectorInceptionResurrectCommand extends AbstractDirectorCommand
         $awsHelper = new \BOSH\Console\Command\AWSHelpers($h->ec2Client, $output);
 
         $previousDeploymentFile = $input->getOption('basedir') . '/compiled/' . $input->getOption('director') . '/bosh-deployments.yml';
-        if ( ! file_exists ( $previousDeploymentFile ) ) {
+        if (!file_exists($previousDeploymentFile)) 
+        {
             $output->writeln("  > <info>unable for find previous deployments in: $previousDeploymentFile. Aborting since there is nothing to resurrect.</info>");
-
             return;
         }
 
@@ -45,10 +45,10 @@ class BoshDirectorInceptionResurrectCommand extends AbstractDirectorCommand
             ],
         ]);
 
-        if  (   !   empty($previousDeployment['Reservations'])
-                &&  $previousDeployment['Reservations'][0]['Instances'][0]['State']['Name'] == 'running' ) {
+        if  (!empty($previousDeployment['Reservations'])
+             &&  $previousDeployment['Reservations'][0]['Instances'][0]['State']['Name'] == 'running') 
+        {
             $output->writeln("  > <info>Found existing microBOSH running as instance: $previousDeploymentInstanceId.  Aborting since no resurrection required.</info>");
-
             return;
         }
 
@@ -72,8 +72,8 @@ EOT;
         $output->writeln('  > <info>uploading "empty" bosh-deployments.yml to prevent attempting to delete old microBOSH</info>...');
         $inceptionIp = $h->getInceptionInstanceDetails()['PrivateIpAddress'];
         $h->rsyncToServer(
-            $previousDeploymentFile.'.resurrect'
-            ,"ubuntu@$inceptionIp:~/cloque/self/bosh-deployments.yml"
+            $previousDeploymentFile.'.resurrect',
+            "ubuntu@$inceptionIp:~/cloque/self/bosh-deployments.yml"
         );
 
         $output->writeln('  > <info>deploying microBOSH</info>...');
@@ -81,12 +81,12 @@ EOT;
 
         $output->writeln('> <comment>attaching old microBOSH persistent disk to new microBOSH</comment>...');
         $output->write('  > <info>unmounting new disk</info>...');
-        preg_match('/\["(.*)"\]/', $h->captureFromServer('ubuntu', $inceptionIp, ['cd ~/cloque/self','bosh micro agent list_disk'])[0],$newDiskId);
+        preg_match('/\["(.*)"\]/', $h->captureFromServer('ubuntu', $inceptionIp, ['cd ~/cloque/self','bosh micro agent list_disk'])[0], $newDiskId);
         $newDiskId = $newDiskId[1];
         $h->runOnServer('ubuntu', $inceptionIp, [
             'cd ~/cloque/self',
             'bosh micro agent stop',
-            "bosh micro agent unmount_disk $newDiskId",
+            "bosh micro agent unmount_disk $newDiskId"
         ]);
         $output->writeln("new disk: $newDiskId unmounted.");
 
