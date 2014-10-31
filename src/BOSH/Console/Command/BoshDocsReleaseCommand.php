@@ -17,6 +17,18 @@ class BoshDocsReleaseCommand extends AbstractCommand
         parent::configure()
             ->setName('boshdocs:release')
             ->setDescription('Generate a job/package summary of a release')
+            ->addOption(
+                'release-readme',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'A path to some summary notes to include'
+            )
+            ->addOption(
+                'release-readme-url',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'A URL path to some release notes to include'
+            )
             ->addArgument(
                 'release-spec',
                 InputArgument::REQUIRED,
@@ -46,6 +58,13 @@ class BoshDocsReleaseCommand extends AbstractCommand
 
         if ($releaseSpec['_notes']) {
             $releaseSpec['_notes'] = file_get_contents($releaseSpec['_notes']);
+        }
+
+        $releaseSpec['release_readme'] = $input->getOption('release-readme');
+        $releaseSpec['release_readme_url'] = $input->getOption('release-readme-url');
+
+        if ($releaseSpec['release_readme']) {
+            $releaseSpec['release_readme'] = file_get_contents($releaseSpec['release_readme']);
         }
 
         foreach ($releaseSpec['packages'] as $packageIdx => &$package) {

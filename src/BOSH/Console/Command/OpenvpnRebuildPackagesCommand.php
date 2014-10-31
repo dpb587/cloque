@@ -37,7 +37,7 @@ class OpenvpnRebuildPackagesCommand extends AbstractCommand
             if (file_exists($mdir)) {
                 $output->write('  > <comment>cleaning</comment>...');
 
-                passthru('rm -fr ' . escapeshellarg($mdir) . ' ' . escapeshellarg($mdir . '/openvpn-package-build.tgz'));
+                passthru('rm -fr ' . escapeshellarg($mdir) . ' ' . escapeshellarg($mdir . '.tgz'));
 
                 $output->writeln('done');
             }
@@ -206,7 +206,7 @@ tls-client
 
             $output->write('  > <comment>cleaning</comment>...');
 
-            passthru('rm -fr ' . escapeshellarg($mdir) . ' ' . escapeshellarg($mdir . '/../openvpn-package-build.tgz'));
+            passthru('rm -fr ' . escapeshellarg($mdir) . ' ' . escapeshellarg($mdir . '.tgz'));
 
             $output->writeln('done');
         }

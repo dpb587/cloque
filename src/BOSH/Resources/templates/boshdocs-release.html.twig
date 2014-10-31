@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ name }}/{{ version }}</title>
+    <title>{{ name }}/v{{ version }}</title>
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
   </head>
@@ -13,22 +13,42 @@
     <div class="container">
       <div class="header">
         <ul class="nav nav-pills pull-right">
-          <li><a href="#jobs">Jobs</a></li>
-          <li><a href="#packages">Packages</a></li>
-          <li><a href="#properties">Properties</a></li>
+          {% if release_readme %}<li><a href="#release">release</a></li>{% endif %}
+          <li><a href="#version">version</a></li>
+          <li><a href="#jobs">jobs</a></li>
+          <li><a href="#packages">packages</a></li>
+          <li><a href="#properties">properties</a></li>
         </ul>
-        <h3>{{ name }}</h3>
+        <h3>{{ name }}<span class="text-muted">/v{{ version }}</span></h3>
       </div>
 
-      <hr id="summary" />
+      {% if release_readme %}
+        <hr id="release" />
+
+        <div class="row">
+          <div class="col-md-2">
+            <h3 id="readme">release</h3>
+
+            <div style="margin:8px 0;">
+              <div class="text-muted">From the <a href="{{ release_readme_url }}">README</a>&hellip;</div>
+            </div>
+          </div>
+
+          <div class="col-md-10" style="margin-top:27px;">
+            {{ release_readme|markdown }}
+          </div>
+        </div>
+      {% endif %}
+
+      <hr id="version" />
 
       <div class="row">
         <div class="col-md-2">
-          <h3 id="summary-release">release</h3>
+          <h3 id="summary-release">version</h3>
 
           <div style="margin:8px 0;">
-            <div class="text-muted">Version</div>
-            <span title="{{ commit_hash }}{% if uncommitted_changes %}*{% endif %}">{{ version }}</span>
+            <div>v{{ version }}</div>
+            <div class="text-muted"><code>{{ commit_hash }}{% if uncommitted_changes %}*{% endif %}</code></div>
           </div>  
         </div>
 

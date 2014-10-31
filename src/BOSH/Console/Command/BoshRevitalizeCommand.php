@@ -113,7 +113,7 @@ class BoshRevitalizeCommand extends AbstractDirectorDeploymentCommand
                         ];
                     }
 
-                    if (isset($revitalizeTask['region'])) {
+                    if ((!empty($revitalizeTask['region'])) && ($revitalizeTask['region'] != $network['regions'][$input->getOption('director')]['region'])) {
                         $awsEc2region = \Aws\Ec2\Ec2Client::factory([
                             'region' => $revitalizeTask['region'],
                         ]);
@@ -302,7 +302,11 @@ class BoshRevitalizeCommand extends AbstractDirectorDeploymentCommand
 
                     $output->writeln('    > <comment>transferring data</comment>...');
 
-                    $this->sshexec($input, $output, $job, 'cd /var/vcap/store && for DIR in `ls /tmp/xfer-xvdj` ; do if [[ "lost+found" != "$DIR" ]] ; then [ ! -e $DIR ] || ( echo -n "      > removing $DIR..." ; rm -fr $DIR ; echo "done" ) ; echo -n "      > restoring $DIR..." ; cp -pr /tmp/xfer-xvdj/$DIR $DIR ; echo "done" ; fi ; done');
+                    if ((!empty($revitalizeTask['copy_method'])) && ('merge' == $revitalizeTask['copy_method'])) {
+                        $this->sshexec($input, $output, $job, 'cd /var/vcap/store && for DIR in `ls /tmp/xfer-xvdj` ; do if [[ "lost+found" != "$DIR" ]] ; then echo -n "      > restoring $DIR..." ; mkdir -p "$DIR" ; rsync -auq "/tmp/xfer-xvdj/$DIR/." "$DIR" ; echo "done" ; fi ; done');
+                    } else {
+                        $this->sshexec($input, $output, $job, 'cd /var/vcap/store && for DIR in `ls /tmp/xfer-xvdj` ; do if [[ "lost+found" != "$DIR" ]] ; then [ ! -e $DIR ] || ( echo -n "      > removing $DIR..." ; rm -fr $DIR ; echo "done" ) ; echo -n "      > restoring $DIR..." ; cp -pr /tmp/xfer-xvdj/$DIR $DIR ; echo "done" ; fi ; done');
+                    }
 
 
                     $output->writeln('    > <comment>unmounting volume</comment>...');
