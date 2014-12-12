@@ -15,7 +15,7 @@ class BoshDirectorInceptionResurrectCommand extends AbstractDirectorCommand
     {
         parent::configure()
             ->setName('boshdirector:inception:resurrect')
-            ->setDescription('Start an inception server')
+            ->setDescription('Resurrect a broken microBOSH')
             ->addArgument(
                 'stemcell',
                 InputArgument::REQUIRED,
@@ -90,7 +90,7 @@ EOT;
         $h->runOnServer('ubuntu', $inceptionIp, [
             'cd ~/cloque/self',
             'bosh micro agent stop',
-            "bosh micro agent unmount_disk $newDiskId"
+            "bosh micro agent unmount_disk $newDiskId",
         ]);
         $output->writeln("new disk: $newDiskId unmounted.");
 
@@ -110,7 +110,11 @@ EOT;
         $h->runOnServer('ubuntu', $inceptionIp, ["sed -i 's/$newDiskId/$previousDeploymentDiskId/' ~/cloque/self/bosh-deployments.yml"]);
 
         $output->writeln('  > <info>Restarting microBOSH</info>');
-        $h->runOnServer('ubuntu', $inceptionIp, ['cd ~/cloque/self','bosh micro agent start']);
+        $h->runOnServer('ubuntu', $inceptionIp, [
+            'cd ~/cloque/self',
+            "bosh micro agent mount_disk $previousDeploymentDiskId",
+            'bosh micro agent start',
+        ]);
 
         $h->fetchBoshDeployments($inceptionIp);
 

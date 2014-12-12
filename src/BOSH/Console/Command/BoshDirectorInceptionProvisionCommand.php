@@ -13,7 +13,7 @@ class BoshDirectorInceptionProvisionCommand extends AbstractDirectorCommand
     {
         parent::configure()
             ->setName('boshdirector:inception:provision')
-            ->setDescription('Start an inception server')
+            ->setDescription('Provision the BOSH')
             ->addArgument(
                 'stemcell',
                 InputArgument::REQUIRED,
@@ -38,7 +38,7 @@ class BoshDirectorInceptionProvisionCommand extends AbstractDirectorCommand
         $h->runOnServer('ubuntu', $inceptionIp, [
             'set -e',
             'cd ~/cloque/self',
-            !$ami ? ('echo "    > Downloading stemcell (this takes a few minutes)..." ; wget -q ' . escapeshellarg($stemcell)) : "echo '    > Using AMI: $stemcell'",
+            !$ami ? ('echo "    > Downloading stemcell (this takes a few minutes)..." ; wget -q -O ' . escapeshellarg(basename($stemcell)) . ' ' . escapeshellarg($stemcell)) : "echo '    > Using AMI: $stemcell'",
             'bosh micro deployment bosh/bosh.yml',
             'bosh -n micro deploy --update-if-exists ' . escapeshellarg(($ami ? $stemcell : basename($stemcell))),
         ]);

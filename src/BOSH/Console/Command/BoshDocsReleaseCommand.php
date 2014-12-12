@@ -24,27 +24,27 @@ class BoshDocsReleaseCommand extends AbstractCommand
                 'A path to some summary notes to include'
             )
             ->addOption(
-                'release-readme-url',
+                'release-home',
                 null,
                 InputOption::VALUE_REQUIRED,
                 'A URL path to some release notes to include'
             )
-            ->addArgument(
-                'release-spec',
-                InputArgument::REQUIRED,
-                'Release specification file'
-            )
             ->addOption(
-                'release-artifact',
+                'version-artifact',
                 null,
                 InputOption::VALUE_REQUIRED,
                 'A path to the release artifact'
             )
             ->addOption(
-                'release-notes',
+                'version-readme',
                 null,
                 InputOption::VALUE_REQUIRED,
                 'A path to some release notes to include'
+            )
+            ->addArgument(
+                'release-spec',
+                InputArgument::REQUIRED,
+                'Release specification file'
             )
             ;
     }
@@ -53,15 +53,15 @@ class BoshDocsReleaseCommand extends AbstractCommand
     {
         $releaseSpec = Yaml::parse($this->indentyaml(file_get_contents($input->getArgument('release-spec'))));
 
-        $releaseSpec['_artifact'] = $input->getOption('release-artifact');
-        $releaseSpec['_notes'] = $input->getOption('release-notes');
+        $releaseSpec['_artifact'] = $input->getOption('version-artifact');
+        $releaseSpec['_notes'] = $input->getOption('version-readme');
 
         if ($releaseSpec['_notes']) {
             $releaseSpec['_notes'] = file_get_contents($releaseSpec['_notes']);
         }
 
         $releaseSpec['release_readme'] = $input->getOption('release-readme');
-        $releaseSpec['release_readme_url'] = $input->getOption('release-readme-url');
+        $releaseSpec['release_home'] = $input->getOption('release-home');
 
         if ($releaseSpec['release_readme']) {
             $releaseSpec['release_readme'] = file_get_contents($releaseSpec['release_readme']);
