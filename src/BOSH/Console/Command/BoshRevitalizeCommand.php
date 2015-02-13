@@ -386,6 +386,10 @@ class BoshRevitalizeCommand extends AbstractDirectorDeploymentCommand
 
     protected function sshrun(InputInterface $input, OutputInterface $output, array $job, $script)
     {
+        if (!file_exists($input->getOption('basedir') . '/compiled/tmp')) {
+            mkdir($input->getOption('basedir') . '/compiled/tmp');
+        }
+
         $file = $input->getOption('basedir') . '/compiled/tmp/sshrun-' . getmypid();
         touch($file);
         chmod($file, 0700);
