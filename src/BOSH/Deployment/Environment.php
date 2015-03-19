@@ -34,6 +34,10 @@ class Environment implements \ArrayAccess
                 $this->cache[$offset] = Yaml::parse(file_get_contents($this->basedir . '/' . $this->directorName . '/../network.yml'));
             } elseif ('network.local' == $offset) {
                 $this->cache[$offset] = $this['network']['regions'][$this->directorName];
+            } elseif (preg_match('#^secure_password\.(?<path>.+)\.(?<key>[^\.]+)$#', $offset, $match)) {
+                $yaml = Yaml::parse(file_get_contents($this->basedir . '/secure/passwords/' . strtr($match['path'], '.', '/') . '.yml'));
+                
+                return $yaml[$match['key']];
             } elseif (preg_match('#^(?<locality>[^/]+)/infrastructure/(?<deployment>[^/]+)(/(?<component>[^/]+))?$#', $offset, $match)) {
                 $this->cache[$offset] = json_decode(file_get_contents($this->basedir . '/compiled/' . (('self' == $match['locality']) ? $this->directorName : $match['locality']) . '/' . $match['deployment'] . '/infrastructure' . (!empty($match['component']) ? ('-' . $match['component']) : '') . '--state.json'), true);
             } else {
@@ -61,7 +65,11 @@ class Environment implements \ArrayAccess
 
     public function embed($path)
     {
+        if (false === $rpath = realpath($path)) {
+            throw new \InvalidArgumentException('Failed to find path: ' . $path);
+        }
+
         // symfony yaml has some issue with losing escape sequences of embedded files
-        return '{*embed*' . realpath($path) . '}';
+        return '{*embed*' . $rpath . '}';
     }
 }
