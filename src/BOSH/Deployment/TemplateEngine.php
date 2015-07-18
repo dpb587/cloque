@@ -31,6 +31,17 @@ class TemplateEngine
                 'strict_variables' => true,
             ]
         );
+        
+        $this->twig->addFilter(new \Twig_SimpleFilter('aws_subnet_gateway', function ($value) {
+            list($network, $mask) = explode('/', $value, 2);
+            
+            // @todo dangerous assumptions here...
+            return preg_replace('/(\d+)\.(\d+)\.(\d+)\.(\d+)/', '$1.$2.$3.1', $network);
+        }));
+        
+        $this->twig->addFilter(new \Twig_SimpleFilter('password', function ($value, $salt) {
+            return crypt($value, '$6$' . $salt . '$');
+        }));
 
         $this->twig->addFilter(new \Twig_SimpleFilter('cidr_network', function ($value) {
             list($network, $mask) = explode('/', $value, 2);
