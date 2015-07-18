@@ -17,6 +17,7 @@ class OpenvpnReloadServersCommand extends AbstractCommand
     {
         parent::configure()
             ->setName('openvpn:reload-servers')
+            ->addArgument('regions', InputArgument::IS_ARRAY | InputArgument::OPTIONAL)
             ->setDescription('Update servers with latest configuration')
             ;
     }
@@ -25,9 +26,12 @@ class OpenvpnReloadServersCommand extends AbstractCommand
     {
         $network = Yaml::parse(file_get_contents($input->getOption('basedir') . '/network.yml'));
         $privateAws = Yaml::parse(file_get_contents($input->getOption('basedir') . '/global/private/aws.yml'));
+        $regions = $input->getArgument('regions');
 
         foreach ($network['regions'] as $regionName => $regionConfig) {
             if ('global' == $regionName) {
+                continue;
+            } elseif ((0 != count($regions)) && (!in_array($regionName, $regions))) {
                 continue;
             }
 
