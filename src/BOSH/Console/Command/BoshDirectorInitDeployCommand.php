@@ -28,7 +28,7 @@ class BoshDirectorInitDeployCommand extends AbstractDirectorDeploymentCommand
             $output,
             'bosh:recompile',
             [
-                '--deployment' => 'bosh',
+                '--deployment' => $input->getOption('deployment') ?: 'bosh',
             ]
         );
 
@@ -36,7 +36,7 @@ class BoshDirectorInitDeployCommand extends AbstractDirectorDeploymentCommand
             '%s/compiled/%s/%s/bosh%s.yml',
             $input->getOption('basedir'),
             $input->getOption('director'),
-            $input->getOption('deployment'),
+            $input->getOption('deployment') ?: 'bosh',
             $input->getOption('component') ? ('-' . $input->getOption('component')) : ''
         );
 
