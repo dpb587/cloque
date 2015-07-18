@@ -4,33 +4,33 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "49315dbb97baea5ac1e6d8ca98965c40",
+    "hash": "9928f2ed2ac6c483f1a0ba01bd83743c",
     "packages": [
         {
             "name": "aws/aws-sdk-php",
-            "version": "2.6.15",
+            "version": "2.8.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "4eaf38f0297533d48f013be7e1ffa1cb2c912e2f"
+                "reference": "69cf65438b99051ce4d599f1611dea5d50551b3f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/4eaf38f0297533d48f013be7e1ffa1cb2c912e2f",
-                "reference": "4eaf38f0297533d48f013be7e1ffa1cb2c912e2f",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/69cf65438b99051ce4d599f1611dea5d50551b3f",
+                "reference": "69cf65438b99051ce4d599f1611dea5d50551b3f",
                 "shasum": ""
             },
             "require": {
-                "guzzle/guzzle": ">=3.7.0,<=3.9.9",
+                "guzzle/guzzle": "~3.7",
                 "php": ">=5.3.3"
             },
             "require-dev": {
                 "doctrine/cache": "~1.0",
                 "ext-openssl": "*",
-                "monolog/monolog": "1.4.*",
-                "phpunit/phpunit": "4.*",
-                "symfony/class-loader": "2.*",
-                "symfony/yaml": "2.*"
+                "monolog/monolog": "~1.4",
+                "phpunit/phpunit": "~4.0",
+                "phpunit/phpunit-mock-objects": "2.3.1",
+                "symfony/yaml": "~2.1"
             },
             "suggest": {
                 "doctrine/cache": "Adds support for caching of credentials and responses",
@@ -40,11 +40,6 @@
                 "symfony/yaml": "Eases the ability to write manifests for creating jobs in AWS Import/Export"
             },
             "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "2.6.x-dev"
-                }
-            },
             "autoload": {
                 "psr-0": {
                     "Aws": "src/"
@@ -72,7 +67,7 @@
                 "s3",
                 "sdk"
             ],
-            "time": "2014-08-14 20:49:47"
+            "time": "2015-06-24 21:23:21"
         },
         {
             "name": "guzzle/guzzle",
@@ -703,21 +698,11 @@
             "time": "2014-07-05 12:19:05"
         }
     ],
-    "packages-dev": [
-
-    ],
-    "aliases": [
-
-    ],
+    "packages-dev": [],
+    "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [
-
-    ],
+    "stability-flags": [],
     "prefer-stable": false,
-    "platform": [
-
-    ],
-    "platform-dev": [
-
-    ]
+    "platform": [],
+    "platform-dev": []
 }

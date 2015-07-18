@@ -8,7 +8,7 @@
         "symfony/monolog-bridge" : "2.5.*",
         "ruflin/elastica" : "1.2.1.0",
         "twig/twig" : "1.16.*",
-        "aws/aws-sdk-php" : "2.6.*"
+        "aws/aws-sdk-php" : "2.8.*"
     },
     "autoload" : {
         "psr-0" : {
