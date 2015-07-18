@@ -71,20 +71,26 @@ class BoshUtilPackageDockerBuildCommand extends AbstractCommand
         $output->writeln('done');
 
 
-        foreach ($spec['files'] as $file) {
-            $output->write('> <info>compile/' . $file . '</info>...');
-
-            if (!file_exists($mdir . '/compile/' . dirname($file))) {
-                mkdir($mdir . '/compile/' . dirname($file), 0700, true);
+        foreach ($spec['files'] as $globfile) {
+            $globfiles = glob('src/' . $globfile);
+            
+            if (!$globfiles) {
+                $globfiles = glob('blobs/' . $globfile);
             }
 
-            if (file_exists($cwd . '/src/' . $file)) {
-                passthru('cp -rp ' . escapeshellarg($cwd . '/src/' . $file) . ' ' . escapeshellarg($mdir . '/compile/' . $file));
-            } else {
-                passthru('cp -p ' . escapeshellarg($cwd . '/blobs/' . $file) . ' ' . escapeshellarg($mdir . '/compile/' . $file));
-            }
+            foreach ($globfiles as $file) {
+                $tfile = preg_replace('#^(src/|blobs/)#', '', $file);
 
-            $output->writeln('done');
+                $output->write('> <info>compile/' . $tfile . '</info>...');
+
+                if (!file_exists($mdir . '/compile/' . dirname($tfile))) {
+                    mkdir($mdir . '/compile/' . dirname($tfile), 0700, true);
+                }
+
+                passthru('cp -rp ' . escapeshellarg($cwd . '/' . $file) . ' ' . escapeshellarg($mdir . '/compile/' . $tfile));
+
+                $output->writeln('done');
+            }
         }
 
 
